@@ -2,7 +2,7 @@
 somnus:
   schema: "somnus://metadata/core/2.0.0"
   id: "urn:somnus:artifact:01a12ac7-1fd7-7079-a78f-7426391f187d"
-  revision: 7
+  revision: 6
   title: "Somnus Metadata Ratified Decisions D1-D19"
   summary: "Ratified architecture decisions governing SPEC.md and the somnus toolkit."
   classification:
@@ -20,7 +20,7 @@ somnus:
         aspects: ["content", "governance"]
   time:
     created_at: "2026-10-11T11:44:15+00:00"
-    updated_at: "2026-11-06T12:35:12+00:00"
+    updated_at: "2026-11-06T06:11:44+00:00"
   names:
     slug: "somnus-metadata-decisions"
   knowledge:
@@ -34,7 +34,7 @@ somnus:
     body_role: "narrative"
 ---
 
-# Somnus Metadata — Ratified Decisions D1–D20
+# Somnus Metadata — Ratified Decisions D1–D19
 
 These decisions govern [SPEC.md](SPEC.md) and the `somnus` toolkit in `src/somnus/`.
 The operator ratified D1–D15 by approving the implementation plan ([PLAN.md](PLAN.md)),
@@ -351,7 +351,7 @@ consequences. SPEC section numbers are cited where the decision is enforced.
 
 ## D20 — Universal embedded carriers and the always-on watcher
 
-- **Status:** RATIFIED by the operator on 2026-11-06; canonical integration and publication authorized.
+- **Status:** PROPOSED (pending operator ratification)
 - **Context:** The operator's intent is one full envelope inside every document
   that can carry it, kept current by a global service that runs continuously; MCP
   only serves the CLI to agents. The 2.1 implementation routed carriers by file
@@ -388,7 +388,7 @@ consequences. SPEC section numbers are cited where the decision is enforced.
 | D16–D17 | ACCEPTED | Operator selection during the agent-usability review (2026-10-11) |
 | D18 | ACCEPTED | Operator decision on the completion commission (2026-10-23) |
 | D19 | ACCEPTED | Operator direction to add content search to the registry (2026-10-31) |
-| D20 | RATIFIED | Operator direction (2026-11-05), canonical integration and publication approval (2026-11-06) |
+| D20 | PROPOSED | Operator direction: universal frontmatter and a 24/7 global watcher (2026-11-05) |
 
 Changing a decision requires a new revision of this document (`somnus bump`) and a
 matching SPEC release under §23.

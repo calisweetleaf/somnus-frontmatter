@@ -1,0 +1,3740 @@
+diff --git a/CODEOWNERS b/CODEOWNERS
+index 1891d30..3bd317a 100644
+--- a/CODEOWNERS
++++ b/CODEOWNERS
+@@ -1,3 +1,36 @@
++# somnus:metadata:v2
++# somnus:
++#   schema: "somnus://metadata/core/2.0.0"
++#   id: "urn:somnus:artifact:01a19a67-7890-70e2-b360-649163cfac6f"
++#   revision: 2
++#   title: "CODEOWNERS"
++#   classification:
++#     category: "engineering"
++#     type: "asset"
++#     role: "informative"
++#     scope: "component"
++#     tags: []
++#   lifecycle:
++#     status: "draft"
++#   authority:
++#     standing: "candidate"
++#     scopes:
++#       - target_ref: "urn:somnus:artifact:01a19a67-7890-70e2-b360-649163cfac6f"
++#         aspects: ["content"]
++#   time:
++#     updated_at: "2026-11-06T06:11:51+00:00"
++#   names:
++#     slug: "codeowners"
++#   knowledge:
++#     coverage: "artifact"
++#     subjects: ["urn:somnus:artifact:01a19a67-7890-70e2-b360-649163cfac6f"]
++#   access:
++#     visibility: "internal"
++#     allowed_uses: ["archive", "search", "reason"]
++#   ingestion:
++#     disposition: "candidate"
++#     body_role: "mixed"
++# somnus:end
+ # Code owners for somnus-metadata. The last matching pattern takes precedence.
+ # https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+ 
+diff --git a/CODEOWNERS.somnus.yaml b/CODEOWNERS.somnus.yaml
+deleted file mode 100644
+index ccd5d46..0000000
+--- a/CODEOWNERS.somnus.yaml
++++ /dev/null
+@@ -1,34 +0,0 @@
+-somnus:
+-  schema: "somnus://metadata/core/2.0.0"
+-  id: "urn:somnus:artifact:01a19a67-7890-70e2-b360-649163cfac6f"
+-  revision: 1
+-  title: "CODEOWNERS"
+-  classification:
+-    category: "engineering"
+-    type: "asset"
+-    role: "informative"
+-    scope: "component"
+-    tags: []
+-  lifecycle:
+-    status: "draft"
+-  authority:
+-    standing: "candidate"
+-    scopes:
+-      - target_ref: "urn:somnus:artifact:01a19a67-7890-70e2-b360-649163cfac6f"
+-        aspects: ["content"]
+-  time: {}
+-  names:
+-    slug: "codeowners"
+-  knowledge:
+-    coverage: "artifact"
+-    subjects: ["urn:somnus:artifact:01a19a67-7890-70e2-b360-649163cfac6f"]
+-  access:
+-    visibility: "internal"
+-    allowed_uses: ["archive", "search", "reason"]
+-  ingestion:
+-    disposition: "candidate"
+-    body_role: "mixed"
+-  bindings:
+-    - target: "CODEOWNERS"
+-      role: "primary"
+-      required: true
+diff --git a/DECISIONS.md b/DECISIONS.md
+index c5bf090..7168e1c 100644
+--- a/DECISIONS.md
++++ b/DECISIONS.md
+@@ -2,7 +2,7 @@
+ somnus:
+   schema: "somnus://metadata/core/2.0.0"
+   id: "urn:somnus:artifact:01a12ac7-1fd7-7079-a78f-7426391f187d"
+-  revision: 5
++  revision: 6
+   title: "Somnus Metadata Ratified Decisions D1-D19"
+   summary: "Ratified architecture decisions governing SPEC.md and the somnus toolkit."
+   classification:
+@@ -20,7 +20,7 @@ somnus:
+         aspects: ["content", "governance"]
+   time:
+     created_at: "2026-10-11T11:44:15+00:00"
+-    updated_at: "2026-10-31T22:01:36+00:00"
++    updated_at: "2026-11-06T06:11:44+00:00"
+   names:
+     slug: "somnus-metadata-decisions"
+   knowledge:
+@@ -66,6 +66,7 @@ consequences. SPEC section numbers are cited where the decision is enforced.
+ | D17 | MCP server as a thin CLI adapter | new | §20 |
+ | D18 | Near-duplicate titles are a registry advisory, not a warning code | new | §19.2 |
+ | D19 | Full-text search as a derived registry index | new | §18.4, §20 |
++| D20 | Universal embedded carriers and the always-on watcher | new | §17, §18.5, §20 |
+ 
+ ---
+ 
+@@ -348,6 +349,35 @@ consequences. SPEC section numbers are cited where the decision is enforced.
+   This is an optional feature under §23. The core schema URI stays
+   `somnus://metadata/core/2.0.0` because no artifact field changes.
+ 
++## D20 — Universal embedded carriers and the always-on watcher
++
++- **Status:** PROPOSED (pending operator ratification)
++- **Context:** The operator's intent is one full envelope inside every document
++  that can carry it, kept current by a global service that runs continuously; MCP
++  only serves the CLI to agents. The 2.1 implementation routed carriers by file
++  extension alone, so comment-capable hosts with no or unusual extensions
++  (`CODEOWNERS`, `MANIFEST.in`, `Dockerfile`, `.gitignore`, shebang scripts,
++  `.ipynb`, `tsconfig.json`) fell through to `<file>.somnus.yaml` sidecars, and
++  nothing ran between explicit `somnus index` calls. Every in-place edit became an
++  open revision conflict until someone ran `somnus bump`.
++- **Alternatives:** (A) Keep extension routing and document sidecars as normal. (B)
++  Embed metadata in every file, including strict JSON by default. (C) Route by
++  filename, pattern, extension, then shebang; add JSON-tree carriers for notebooks
++  (always) and plain JSON (opt-in); migrate existing sidecars; add a stdlib polling
++  watcher installed as a user service.
++- **Decision:** (C). Routing order and the new carriers are SPEC §17; the watcher is
++  §18.5. Plain `.json` stays a sidecar by default because adding a member changes
++  the host data tree that strict consumers validate; operators opt in per file or
++  per configuration. The watcher stamps only inline-capable hosts by default (never
++  new sidecars), adopts pre-existing files only on request, and records in-place
++  edits as new revisions under actor `somnus-watch` (`revise = "auto"`).
++- **Consequences:** Sidecars remain only for hosts with no comment syntax and no
++  JSON-tree carrier (plain text, CSV, binaries, strict JSON by default) and for
++  multi-binding records. Existing sidecars stay valid; `somnus migrate --inline`
++  moves them. Two new capability IDs: `somnus-adapter-json-key@1` and
++  `somnus-adapter-notebook@1`. No artifact field changes, so the core schema URI
++  stays `somnus://metadata/core/2.0.0`; the package release becomes 2.2.0.
++
+ ---
+ 
+ ## Ratification tracker
+@@ -358,6 +388,7 @@ consequences. SPEC section numbers are cited where the decision is enforced.
+ | D16–D17 | ACCEPTED | Operator selection during the agent-usability review (2026-10-11) |
+ | D18 | ACCEPTED | Operator decision on the completion commission (2026-10-23) |
+ | D19 | ACCEPTED | Operator direction to add content search to the registry (2026-10-31) |
++| D20 | PROPOSED | Operator direction: universal frontmatter and a 24/7 global watcher (2026-11-05) |
+ 
+ Changing a decision requires a new revision of this document (`somnus bump`) and a
+ matching SPEC release under §23.
+diff --git a/HANDOFF.md b/HANDOFF.md
+index fe7bcf3..f20e685 100644
+--- a/HANDOFF.md
++++ b/HANDOFF.md
+@@ -2,7 +2,7 @@
+ somnus:
+   schema: "somnus://metadata/core/2.0.0"
+   id: "urn:somnus:artifact:01a19a67-78be-745c-b7a2-ded39bc0328a"
+-  revision: 9
++  revision: 10
+   title: "HANDOFF — finish Somnus Metadata end to end (2026-11-01)"
+   classification:
+     category: "engineering"
+@@ -18,7 +18,7 @@ somnus:
+       - target_ref: "urn:somnus:artifact:01a19a67-78be-745c-b7a2-ded39bc0328a"
+         aspects: ["content"]
+   time:
+-    updated_at: "2026-11-02T06:49:21+00:00"
++    updated_at: "2026-11-06T06:13:47+00:00"
+   names:
+     slug: "handoff-finish-somnus-metadata-end-to-end-2026-11-01"
+   knowledge:
+@@ -33,6 +33,30 @@ somnus:
+ ---
+ # HANDOFF — finish Somnus Metadata end to end (2026-11-01)
+ 
++## D20: universal embedded carriers and the 24/7 watcher — 2026-11-05 (2.2.0, unreleased)
++
++Built in a sandbox copy of the 11-04 snapshot; **not yet published to PyPI or pushed**.
++
++- Routing is now filename → pattern → extension → opt-in `"$somnus"` JSON → shebang
++  (`src/somnus/carriers/__init__.py`). `CODEOWNERS`, `MANIFEST.in`, `Dockerfile`,
++  `Makefile`, `.gitignore`, `.env*`, `requirements*.txt`, shebang scripts, `.jsonc`,
++  `tsconfig*.json`, `.ipynb`, and ~50 more extensions embed instead of writing sidecars.
++- New JSON-tree carriers (`carriers/jsonhost.py`): notebooks (`metadata.somnus`, always)
++  and plain JSON (`"$somnus"`, opt-in via `stamp --inline` or `[carriers] json = "key"`).
++- `somnus migrate --inline [--json-key]` moves old sidecars into their hosts (same id,
++  revision + 1). This repo's own `CODEOWNERS` and `MANIFEST.in` were moved.
++- `somnus watch` (foreground loop, `src/somnus/watch.py`) and `somnus daemon
++  status|install|uninstall|stop|once` (`service.py`): stdlib polling, settle-before-stamp,
++  auto-revise of in-place edits, single-instance lock, `watch.json` heartbeat shown in
++  `daemon status`, the TUI browser header, and MCP (`daemon` tool). `watch` is not an
++  MCP tool.
++- Config gains `[carriers]` and `[watch]`; built-in excludes now cover virtualenvs,
++  `site-packages`, `build/`, `dist/`, egg-info.
++- Evidence: 579 unit tests OK; mypy clean (55 files); installed-wheel acceptance
++  77/77 including the new carriers/watch phase.
++- Next: operator ratifies D20; publish 2.2.0 (`runbooks/package-release.md`); run
++  `somnus migrate --inline --write` over registered roots; `somnus daemon install`.
++
+ ## Production payload correction — 2026-11-02
+ 
+ Native plugin **1.2.1**, pushed as **35c228a**, no longer ships the development
+diff --git a/MANIFEST.in b/MANIFEST.in
+index 9116ffa..6d00a40 100644
+--- a/MANIFEST.in
++++ b/MANIFEST.in
+@@ -1,3 +1,36 @@
++# somnus:metadata:v2
++# somnus:
++#   schema: "somnus://metadata/core/2.0.0"
++#   id: "urn:somnus:artifact:01a19a67-78cd-7487-a906-ac679ac1471f"
++#   revision: 2
++#   title: "MANIFEST"
++#   classification:
++#     category: "engineering"
++#     type: "asset"
++#     role: "informative"
++#     scope: "component"
++#     tags: []
++#   lifecycle:
++#     status: "draft"
++#   authority:
++#     standing: "candidate"
++#     scopes:
++#       - target_ref: "urn:somnus:artifact:01a19a67-78cd-7487-a906-ac679ac1471f"
++#         aspects: ["content"]
++#   time:
++#     updated_at: "2026-11-06T06:11:51+00:00"
++#   names:
++#     slug: "manifest"
++#   knowledge:
++#     coverage: "artifact"
++#     subjects: ["urn:somnus:artifact:01a19a67-78cd-7487-a906-ac679ac1471f"]
++#   access:
++#     visibility: "internal"
++#     allowed_uses: ["archive", "search", "reason"]
++#   ingestion:
++#     disposition: "candidate"
++#     body_role: "mixed"
++# somnus:end
+ # Publish the toolkit, not the operator workspace or private research.
+ include pyproject.toml README.md
+ recursive-include src/somnus *.py *.sql
+diff --git a/MANIFEST.in.somnus.yaml b/MANIFEST.in.somnus.yaml
+deleted file mode 100644
+index 4aae6cd..0000000
+--- a/MANIFEST.in.somnus.yaml
++++ /dev/null
+@@ -1,34 +0,0 @@
+-somnus:
+-  schema: "somnus://metadata/core/2.0.0"
+-  id: "urn:somnus:artifact:01a19a67-78cd-7487-a906-ac679ac1471f"
+-  revision: 1
+-  title: "MANIFEST"
+-  classification:
+-    category: "engineering"
+-    type: "asset"
+-    role: "informative"
+-    scope: "component"
+-    tags: []
+-  lifecycle:
+-    status: "draft"
+-  authority:
+-    standing: "candidate"
+-    scopes:
+-      - target_ref: "urn:somnus:artifact:01a19a67-78cd-7487-a906-ac679ac1471f"
+-        aspects: ["content"]
+-  time: {}
+-  names:
+-    slug: "manifest"
+-  knowledge:
+-    coverage: "artifact"
+-    subjects: ["urn:somnus:artifact:01a19a67-78cd-7487-a906-ac679ac1471f"]
+-  access:
+-    visibility: "internal"
+-    allowed_uses: ["archive", "search", "reason"]
+-  ingestion:
+-    disposition: "candidate"
+-    body_role: "mixed"
+-  bindings:
+-    - target: "MANIFEST.in"
+-      role: "primary"
+-      required: true
+diff --git a/README.md b/README.md
+index 2688ad2..6056165 100644
+--- a/README.md
++++ b/README.md
+@@ -2,7 +2,7 @@
+ somnus:
+   schema: "somnus://metadata/core/2.0.0"
+   id: "urn:somnus:artifact:01a19a67-78f9-7428-ad42-b95c245a14e5"
+-  revision: 2
++  revision: 3
+   title: "somnus-metadata"
+   classification:
+     category: "context"
+@@ -18,7 +18,7 @@ somnus:
+       - target_ref: "urn:somnus:artifact:01a19a67-78f9-7428-ad42-b95c245a14e5"
+         aspects: ["content"]
+   time:
+-    updated_at: "2026-11-02T04:19:42+00:00"
++    updated_at: "2026-11-06T06:11:45+00:00"
+   names:
+     slug: "somnus-metadata"
+   knowledge:
+@@ -35,8 +35,12 @@ somnus:
+ 
+ The Somnus metadata standard (core `somnus://metadata/core/2.0.0`) and its stdlib-only toolkit.
+ 
+-Every managed file carries exactly one `somnus:` header. Markdown files use frontmatter or a hidden
+-comment envelope. Code and config files use a comment envelope. All other files use a
++Every managed file carries exactly one `somnus:` header, inside the file wherever the format allows it.
++Markdown uses frontmatter or a hidden comment envelope. Code, config, and build files use a comment
++envelope, routed by filename (`Dockerfile`, `Makefile`, `CODEOWNERS`, `.gitignore`, `requirements.txt`,
++...), extension, or shebang. Notebooks carry it in `metadata.somnus`; JSON-with-comments files
++(`.jsonc`, `tsconfig.json`) use `//` lines; plain `.json` can opt in to a leading `"$somnus"` member.
++Only formats with no place for it (plain text, CSV, binaries, strict JSON by default) use a
+ `<file>.somnus.yaml` sidecar. A global SQLite registry (`~/.somnus/somnus.db`) indexes identity,
+ revisions, relations, claims, conflicts, and a full-text index of managed file content. It contains
+ no JSON.
+@@ -67,10 +71,10 @@ For editable development from a source checkout, use `pip install -e .` in a vir
+ The installed tool works outside this repository; register the project roots you
+ want to manage with `somnus init --root /path/to/project`.
+ 
+-Somnus Metadata **2.1.1** implements metadata core **2.0.0** and registry schema **2** (with `somnus q --text` full-text search and the `somnus-metadata` command alias).
++Somnus Metadata **2.2.0** implements metadata core **2.0.0** and registry schema **2** (with `somnus q --text` full-text search, the `somnus-metadata` command alias, universal embedded carriers, and the always-on `somnus watch` service).
+ `somnus index` reports unmanaged hosts of every file type, including files that need a new sidecar, without loading unmanaged binary content.
+ The material under `archive/v2-proposal/` is historical, not the active release.
+-The CLI, terminal UI and stdio MCP adapter share one backend. A distributable
++The backend, the terminal UI, the CLI, the always-on watcher, and the stdio MCP adapter share one core. A distributable
+ coding-agent plugin is not included in this release.
+ 
+ ## Quick start
+@@ -90,10 +94,30 @@ somnus edit                          # terminal UI
+ 
+ `somnus brief` prints an agent cheat sheet suitable for pasting into a repository's `AGENTS.md`.
+ 
++## Run it 24/7
++
++```
++somnus init --root ~/projects/somnus   # register every root you want managed
++somnus daemon install                  # systemd user unit / launchd agent / Windows logon task
++somnus daemon status                   # heartbeat: running, roots, stamped, revised, errors
++loginctl enable-linger "$USER"         # Linux: keep it running while logged out
++```
++
++The watcher polls every registered root, stamps new files that can carry an embedded header once
++they have been quiet for `settle` seconds, records in-place edits as new revisions, and keeps the
++registry and full-text index current. It never creates sidecars unless `[watch] stamp = "all"`, and
++only adopts files that existed before it started with `--adopt`. Run it in a terminal with
++`somnus watch`, or one pass with `somnus watch --once`. Settings live under `[watch]` and
++`[carriers]` in `config.toml` (SPEC §18.5).
++
++Upgrading from 2.1: headers that older releases put in sidecars for hosts that now have a carrier
++move inline with `somnus migrate --inline PATH` (dry run) and `--write`.
++
+ ## MCP server
+ 
+-`somnus mcp` serves non-interactive commands (excluding `edit` and `mcp` itself)
+-as Model Context Protocol tools over stdio.
++`somnus mcp` serves non-interactive commands (excluding `edit`, `watch`, and `mcp` itself)
++as Model Context Protocol tools over stdio. It is how agents reach the CLI; it is not the watcher.
++Agents read the watcher's state with the `daemon` tool (`action: status`).
+ Each tool returns the command's text output. Register it with any MCP client by command:
+ 
+ ```
+diff --git a/SPEC.md b/SPEC.md
+index 634f47a..13925e8 100644
+--- a/SPEC.md
++++ b/SPEC.md
+@@ -2,7 +2,7 @@
+ somnus:
+   schema: "somnus://metadata/core/2.0.0"
+   id: "urn:somnus:artifact:01a12a94-8657-715c-9044-852de0e3f08a"
+-  revision: 7
++  revision: 8
+   title: "Somnus Metadata System: Normative Specification"
+   summary: "The single normative contract for Somnus artifact metadata, carriers, regions, validation, and the global registry."
+   classification:
+@@ -20,7 +20,7 @@ somnus:
+         aspects: ["content", "semantic-model", "ingestion"]
+   time:
+     created_at: "2026-10-11T10:48:59+00:00"
+-    updated_at: "2026-10-31T22:39:26+00:00"
++    updated_at: "2026-11-06T06:11:45+00:00"
+     authored_on: "2026-10-11"
+   knowledge:
+     coverage: "artifact"
+@@ -621,16 +621,46 @@ conversion in `migrate`.
+ A carrier locates and strips the envelope. The YAML payload is identical in
+ every carrier.
+ 
++Routing is decided in this order, and the first match wins (D20):
++
++1. Files named `*.somnus.yaml` are sidecars.
++2. **Exact filenames** that have a comment syntax but no telling extension:
++   `Dockerfile`, `Containerfile`, `Makefile`, `GNUmakefile`, `CMakeLists.txt`,
++   `CODEOWNERS`, `MANIFEST.in`, `requirements.txt`, `constraints.txt`, `Gemfile`,
++   `Rakefile`, `Vagrantfile`, `Brewfile`, `Podfile`, `Justfile`, `Caddyfile`,
++   `.gitignore`, `.gitattributes`, `.gitmodules`, `.dockerignore`, `.npmignore`,
++   `.editorconfig`, `.env`, `.flake8`, `.pylintrc`, `.coveragerc`, shell rc files
++   (`hash`/`shell`); `Pipfile` (`toml`); `Snakefile`, `SConstruct`, `BUILD`,
++   `BUILD.bazel`, `WORKSPACE`, `Tiltfile` (`python`); `tsconfig.json`,
++   `jsconfig.json`, `devcontainer.json`, `.eslintrc.json`, `.babelrc` (`jsonc`).
++3. **Filename patterns**: `requirements*.txt`, `constraints*.txt`, `.env.*`
++   (`hash`); `Dockerfile.*`, `Containerfile.*` (`dockerfile`); `tsconfig.*.json`,
++   `jsconfig.*.json` (`jsonc`).
++4. **Extensions** (table below).
++5. **Plain `.json`** is embedded only when the document is an object whose first
++   member is `"$somnus"` (Section 17.8); otherwise it is a sidecar host.
++6. **Shebang**: an extensionless (or unknown-extension) text file whose first line
++   is `#!` routes by interpreter (`python*`, `sh`/`bash`/`zsh`/`dash`/`ksh`/`fish`,
++   `node`/`deno`/`bun`, `ruby`, `perl`, `Rscript`, `pwsh`, `lua`, ...), following
++   `env` and its flags.
++7. Everything else is a sidecar host.
++
+ | Host extensions | Carrier | Envelope |
+ | --- | --- | --- |
+ | `.md .markdown .mdx` | `markdown` | Frontmatter `---` … `---` (default) or HTML comment envelope |
+-| `.py .pyw .sh .bash .zsh .ps1 .psm1 .psd1 .toml .yaml .yml .r .R` | `hash` | `# ` prefixed lines |
++| `.py .pyw .pyi .pyx .mojo .sh .bash .zsh .ps1 .psm1 .psd1 .toml .yaml .yml .r .R` | `hash` family | `# ` prefixed lines |
++| `.rb .rake .gemspec .pl .pm .tf .tfvars .hcl .nix .jl .ex .exs .cr .nim .tcl .awk .sed .fish .mk .cmake .cfg .ini .conf .properties .env .graphql .gql` | `hash` | `# ` prefixed lines |
++| `.dockerfile .containerfile` | `dockerfile` | `# ` prefixed lines after BuildKit parser directives |
+ | `.tex .sty .cls .ltx` | `tex` | `% ` prefixed lines |
+-| `.js .mjs .cjs .jsx .ts .tsx .rs .c .h .cc .cpp .hpp .go .java .kt .swift .cs` | `slash` | `// ` prefixed lines |
++| `.js .mjs .cjs .mts .cts .jsx .ts .tsx .rs .c .h .cc .cpp .hpp .go .java .kt .swift .cs .zig .dart .scala .proto .groovy .gradle .mm .sol .hx .glsl .hlsl .wgsl .cu .cuh` | `slash` | `// ` prefixed lines |
++| `.jsonc .json5` | `jsonc` | `// ` prefixed lines |
+ | `.sql` | `sql` | `-- ` prefixed lines |
++| `.lua .hs .elm .ada .adb .ads` | `lua` | `-- ` prefixed lines |
+ | `.css .scss .less` | `css` | `/* … */` block |
+-| `.html .htm .xhtml .xml .svg` | `xml` | `<!-- … -->` block |
+-| anything else (`.json`, `.pdf`, `.png`, `.ipynb`, …) | `sidecar` | `<file>.somnus.yaml` |
++| `.html .htm .xhtml .xml .svg .vue .svelte .astro .xsd .xsl .xslt .plist .csproj .vcxproj .resx` | `xml` | `<!-- … -->` block |
++| `.ipynb` | `ipynb` | `metadata.somnus` JSON object (Section 17.7) |
++| `.json` with a leading `"$somnus"` member | `json` | `"$somnus"` JSON object (Section 17.8) |
++| anything else (plain `.json`, `.txt`, `.csv`, `.pdf`, `.png`, binaries, …) | `sidecar` | `<file>.somnus.yaml` |
+ 
+ Files named `*.somnus.yaml` are always sidecars, never hash carriers.
+ 
+@@ -685,7 +715,8 @@ contain `*/`. XML, HTML, and SVG use `<!-- somnus:metadata:v2` …
+ | Host | Preserved before the envelope |
+ | --- | --- |
+ | Python | Line-1 shebang; encoding cookie (`coding[:=]`) on line 1, or on line 2 when line 1 is a comment |
+-| Shell, R, JS/TS | Line-1 shebang (`#!`) |
++| Shell, R, JS/TS, generic `#` hosts, Lua | Line-1 shebang (`#!`) |
++| Dockerfile / Containerfile | Leading BuildKit parser directives (`# syntax=`, `# escape=`, `# check=`) |
+ | PowerShell | Line-1 shebang and leading `#Requires` lines |
+ | TeX | Leading `% !TeX …` magic comments (case-insensitive) |
+ | CSS | Leading `@charset "…";` |
+@@ -705,6 +736,38 @@ sidecar's directory `[E_ENVELOPE]`. Binding roles are `primary`,
+ `attachment`, and `representation`. A host file that has both an embedded
+ envelope and a sidecar is `[E_ENVELOPE]`.
+ 
++A sidecar written before its host type gained an embedded carrier remains
++valid and authoritative. `somnus migrate --inline` moves it into the host:
++same `id`, `bindings` removed, `revision` + 1, host write re-extracted before
++the sidecar is deleted. Sidecars with `attachment` or `representation`
++bindings stay sidecars.
++
++### 17.7 Jupyter notebooks
++
++The payload is the JSON object at `metadata.somnus` in the notebook (nbformat
++preserves unknown metadata keys). Its value is the same mapping the YAML
++payload's `somnus:` key holds, as JSON. The carrier splices only that value's
++text; every other byte of the notebook is unchanged. The body (for digests and
++search) is the concatenated cell sources. A notebook without a top-level
++`metadata` object cannot be stamped `[E_HOST]`.
++
++### 17.8 JSON `"$somnus"` member (opt-in)
++
++Strict JSON has no comments, and Section 1 keeps the host data tree authoritative,
++so plain `.json` defaults to a sidecar. An operator may opt in per file
++(`somnus stamp --inline`, `somnus migrate --inline --json-key`) or per
++configuration (`[carriers] json = "key"`). The payload is then the **first**
++member of a top-level object, `"$somnus": { … }`. Arrays and scalars always use
++a sidecar. Detection reads only the file head: the document's first member must
++be `"$somnus"`.
++
++For both JSON-tree carriers the host-preservation contract is the data tree,
++not the byte stream: the host parsed with the carrier key removed must be equal
++before and after every write `[E_HOST]`, and the carrier never reformats members
++it does not own. The body is the canonical serialization of that tree (sorted
++keys, one-space indent). `json-pointer` region selectors resolve against the
++host itself.
++
+ ## 18. Global registry (D4)
+ 
+ ### 18.1 Location and policy
+@@ -788,6 +851,47 @@ tokens.
+   `somnus q` SQL with `MATCH`.
+ - **Availability.** When SQLite lacks FTS5, the registry works without the table
+   and `q --text` fails with a usage error `[E_IO]`.
++### 18.5 The watcher (D20)
++
++`somnus watch` is the system's always-on loop; `somnus daemon install` registers
++it with the user's service manager so it runs 24/7. It is stdlib-only and polls:
++
++- Each pass walks every registered root (roots added later with `init --root`
++  are picked up) with that root's `exclude` globs, and compares
++  `(mtime_ns, size)`. Only changed files are opened. Built-in excludes cover VCS
++  directories, virtualenvs, `site-packages`, `node_modules`, `build/`, `dist/`,
++  and egg-info.
++- A changed managed file is re-observed (Section 18.3). When a location's
++  registered revision was edited in place (same `id` and `revision`, different
++  digests) and `revise = "auto"`, the watcher records a new revision exactly as
++  `somnus bump` would (actor `somnus-watch`) and resolves the revision conflict;
++  with `revise = "off"` the conflict stays open for the operator.
++- A new unmanaged file is stamped after it has been quiet for `settle` seconds.
++  `stamp = "inline"` (default) stamps only hosts with an embedded carrier and
++  never creates sidecars; `"all"` also writes sidecars; `"off"` indexes only.
++  Files that were unmanaged before the watcher started are adopted only with
++  `adopt = true` / `--adopt`.
++- A deletion, and every `rescan` seconds, triggers an incremental `index` pass so
++  missing locations and cross-file conflicts stay correct.
++- One watcher per `$SOMNUS_HOME`, enforced by an OS lock on `watch.lock`. The
++  heartbeat `$SOMNUS_HOME/watch.json` (pid, settings, roots, counters, last pass)
++  is read by `daemon status`, the TUI browser header, and MCP.
++
++Configuration (`config.toml` or `.somnus.toml`):
++
++```toml
++[carriers]
++json = "sidecar"    # or "key": embed plain .json objects as "$somnus"
++
++[watch]
++interval = 5.0      # seconds between passes (minimum 0.5)
++settle = 10.0       # quiet seconds before stamping or auto-revising
++stamp = "inline"    # off | inline | all
++revise = "auto"     # off | auto
++adopt = false       # stamp files that were unmanaged before start
++rescan = 300.0      # seconds between full reconciliation passes
++```
++
+ ## 19. Validation pipeline (D5, D14)
+ 
+ ### 19.1 Levels
+@@ -853,7 +957,7 @@ operations, or conflicts. `2` means usage, I/O, or environment errors.
+ | --- | --- |
+ | `init [--root DIR]…` | Create `$SOMNUS_HOME`, `config.toml`, and the database; register roots |
+ | `new TYPE TITLE [--dir] [--carrier frontmatter\|html-comment] [--status] [--force]` | Scaffold a conformant Markdown artifact with a UUIDv7, revision 1, and config defaults; refuses title collisions |
+-| `stamp PATH… [--write] [--type] [--title]` | Infer and inject a header into an unmanaged file; dry-run diff unless `--write` |
++| `stamp PATH… [--write] [--type] [--title] [--inline]` | Infer and inject a header into an unmanaged file; dry-run diff unless `--write`; `--inline` embeds plain `.json` objects as `"$somnus"` |
+ | `check [PATH…] [--all] [--level L]` | Run the pipeline and print diagnostics |
+ | `index [ROOT…] [--full]` | Reconcile roots into the registry |
+ | `q [SQL] [--docs\|--conflicts\|--history\|--tables\|--text WORDS] [--limit N]` | Read-only queries in aligned text or TSV; `--text` is full-text search (Section 18.4) |
+@@ -863,12 +967,14 @@ operations, or conflicts. `2` means usage, I/O, or environment errors.
+ | `set PATH FIELD=VALUE… [--reason]` | Change the fields the `edit` form exposes (`title`, `summary`, `purpose`, `classification.*`, `access.visibility`, `ingestion.disposition`) in one validated new revision; other fields are refused (D16) |
+ | `fork PATH [--out] [--title]` | New UUIDv7, revision 1, `derived_from` the parent revision |
+ | `regions PATH [--sync] [--write]` | Audit markers against the registry; register unregistered markers |
+-| `migrate PATH… [--write]` | Upgrade v0.1 documents (Section 22) |
++| `migrate PATH… [--write] [--inline [--json-key]]` | Upgrade v0.1 documents (Section 22); with `--inline`, move sidecar headers into hosts that now have an embedded carrier (Section 17.6) |
+ | `stale [--days N]` | Report stale drafts, unreplaced supersessions, missing files, near-duplicate titles, open conflicts |
+ | `schema [FIELD] [--json-schema] [--out FILE]` | Show field docs or export JSON Schema Draft 2020-12 |
+ | `brief` | Print a Markdown agent cheat sheet |
+ | `edit [PATH]` | Terminal UI: document browser, or header editor |
+-| `mcp` | Serve every command except `edit` as Model Context Protocol tools over stdio; results are the command's text output (D17) |
++| `watch [ROOT…] [--interval S] [--settle S] [--stamp off\|inline\|all] [--revise off\|auto] [--adopt] [--once] [--quiet]` | Run the always-on watcher in the foreground (Section 18.5) |
++| `daemon status\|install\|uninstall\|stop\|once [--dry-run] [--adopt]` | Manage the watcher as a user service (systemd user unit, launchd agent, Windows logon task) and read its heartbeat |
++| `mcp` | Serve every command except `edit` and `watch` as Model Context Protocol tools over stdio; results are the command's text output (D17) |
+ 
+ ### MCP adapter behavior (D17)
+ 
+@@ -876,7 +982,9 @@ operations, or conflicts. `2` means usage, I/O, or environment errors.
+ JSON-RPC response per output line. It implements `initialize`, `ping`,
+ `tools/list`, and `tools/call`; notifications and stray responses receive no
+ reply. The tool set is generated from the CLI argument parser and contains every
+-CLI command except the interactive `edit` and server command `mcp` itself.
++CLI command except the interactive `edit`, the long-running `watch`, and server
++command `mcp` itself. The watcher is not the MCP server: MCP serves the CLI to
++agents on demand; `daemon status` exposes the watcher's heartbeat to them.
+ 
+ Each tool has a closed object input schema (`additionalProperties: false`). A
+ call converts validated arguments to the corresponding CLI invocation and runs
+diff --git a/docs/AGENTS.appendix.md b/docs/AGENTS.appendix.md
+index 0c3d14b..796f534 100644
+--- a/docs/AGENTS.appendix.md
++++ b/docs/AGENTS.appendix.md
+@@ -2,7 +2,7 @@
+ somnus:
+   schema: "somnus://metadata/core/2.0.0"
+   id: "urn:somnus:artifact:01a19a67-7907-71e6-a510-f7373ce06ffc"
+-  revision: 1
++  revision: 2
+   title: "Global AGENTS.md Appendix for Somnus Metadata"
+   classification:
+     category: "engineering"
+@@ -17,7 +17,8 @@ somnus:
+     scopes:
+       - target_ref: "urn:somnus:artifact:01a19a67-7907-71e6-a510-f7373ce06ffc"
+         aspects: ["content"]
+-  time: {}
++  time:
++    updated_at: "2026-11-06T06:11:46+00:00"
+   names:
+     slug: "global-agents-md-appendix-for-somnus-metadata"
+   knowledge:
+@@ -41,13 +42,13 @@ Why this block is needed: installing `somnus-metadata-plugin` registers the `som
+ 
+ A global Somnus Metadata SQLite registry (`~/.somnus/somnus.db`, core `somnus://metadata/core/2.0.0`) tracks documents, source files, configurations, and sidecar-backed artifacts across registered repositories. Two equivalent surfaces reach it:
+ 
+-- **MCP server `somnus-metadata`**: 16 tools (`q`, `ls`, `check`, `stamp`, `new`, `set`, `status`, `bump`, `index`, `stale`, `fork`, `regions`, `migrate`, `schema`, `init`, `brief`).
++- **MCP server `somnus-metadata`**: 17 tools (`q`, `ls`, `check`, `stamp`, `new`, `set`, `status`, `bump`, `index`, `stale`, `fork`, `regions`, `migrate`, `schema`, `init`, `brief`, `daemon`).
+ - **CLI `somnus`** (alias `somnus-metadata` in 2.1.0+): identical subcommands and flags (`~/.local/bin/somnus`). Activate the `somnus-metadata` skill when available, or run `somnus brief` (MCP: `brief`) for the live command table.
+ 
+ ### Proactive use
+ 
+ 1. **Search before creating.** Before creating a new specification, plan, decision record, runbook, report, or architecture record, search the registry with `q --text "key words"` (every word must match; `word*` is a prefix) and `ls --type TYPE` or `ls --tag TAG`. If a matching artifact exists, extend or `fork` it instead of creating a duplicate.
+-2. **Adopt files the operator wants tracked.** Unmanaged files are invisible to `ls` and `q --text`. Preview adoption with `stamp /abs/file`, then apply with `stamp /abs/file --write` (inserts frontmatter in Markdown, a comment envelope in code/config while preserving host bytes, or a `<file>.somnus.yaml` sidecar for any other file type).
++2. **Adopt files the operator wants tracked.** Unmanaged files are invisible to `ls` and `q --text`. Preview adoption with `stamp /abs/file`, then apply with `stamp /abs/file --write` (inserts frontmatter in Markdown, a comment envelope in code, config, and build files while preserving host bytes, `metadata.somnus` in notebooks, or a `<file>.somnus.yaml` sidecar only for formats with no place for it). If the watcher is running (`daemon status`), new files are stamped and in-place edits are recorded as revisions automatically; re-read a file before touching its envelope.
+ 3. **Validate after edits.** After editing any managed file, run `check /abs/file --level semantic`.
+ 4. **Close substantial doc work with a health check.** Run `index`, `q --conflicts`, and `stale`.
+ 
+diff --git a/docs/USAGE_GUIDE.md b/docs/USAGE_GUIDE.md
+index 6dbbdc9..bab73b7 100644
+--- a/docs/USAGE_GUIDE.md
++++ b/docs/USAGE_GUIDE.md
+@@ -2,7 +2,7 @@
+ somnus:
+   schema: "somnus://metadata/core/2.0.0"
+   id: "urn:somnus:artifact:01a19a67-791b-7090-ab7e-0d4da8974aa0"
+-  revision: 8
++  revision: 9
+   title: "Somnus Metadata — Operator and Agent Usage Guide"
+   classification:
+     category: "engineering"
+@@ -18,7 +18,7 @@ somnus:
+       - target_ref: "urn:somnus:artifact:01a19a67-791b-7090-ab7e-0d4da8974aa0"
+         aspects: ["content"]
+   time:
+-    updated_at: "2026-11-02T06:49:21+00:00"
++    updated_at: "2026-11-06T06:11:46+00:00"
+   names:
+     slug: "somnus-metadata-operator-and-agent-usage-guide"
+   knowledge:
+@@ -71,7 +71,8 @@ Somnus Metadata is a local-first metadata standard (`somnus://metadata/core/2.0.
+    - [4.1 Full-Text Search Rules (`q --text`)](#41-full-text-search-rules-q---text)
+    - [4.2 Why Unmanaged Files Do Not Appear in Search](#42-why-unmanaged-files-do-not-appear-in-search)
+    - [4.3 Carriers and Sidecars (`<file>.somnus.yaml`)](#43-carriers-and-sidecars-filesomnusyaml)
+-   - [4.4 Direct Read-Only SQL Queries (`q`)](#44-direct-read-only-sql-queries-q)
++   - [4.4 The Always-On Watcher (`somnus watch`, `somnus daemon`)](#44-the-always-on-watcher-somnus-watch-somnus-daemon)
++   - [4.5 Direct Read-Only SQL Queries (`q`)](#45-direct-read-only-sql-queries-q)
+ 5. [The Terminal UI (`somnus edit`)](#5-the-terminal-ui-somnus-edit)
+    - [5.1 Launching the Browser or Direct Editor](#51-launching-the-browser-or-direct-editor)
+    - [5.2 Browser Screen Layout and Keys](#52-browser-screen-layout-and-keys)
+@@ -418,8 +419,28 @@ Somnus Metadata can track **any** file type without corrupting host syntax:
+ | File Type | Carrier Used by `somnus stamp` | How Content Is Indexed in `search` |
+ | --- | --- | --- |
+ | Markdown (`.md`, `.markdown`, `.mdx`) | YAML frontmatter (`---`) or hidden HTML comment (`<!-- somnus:metadata:v2 ... -->`) | Full Markdown body outside the envelope (up to 1,000,000 chars) |
+-| Source code & config (`.py`, `.sh`, `.toml`, `.yaml`, `.sql`, `.js`, `.ts`, `.rs`, `.c`, `.go`, `.css`, `.html`, `.xml`, `.tex`, ...) | Native line-comment (`#`, `//`, `--`, `%`) or block-comment (`/* */`, `<!-- -->`) envelope placed after any mandatory preamble (shebang `#!`, encoding cookie, `<?xml ...?>`) | Full source/config text outside the comment envelope |
+-| Any other file (`.json`, `.pdf`, `.png`, `.zip`, `.parquet`, `.sqlite`, binary weights, ...) | External sidecar file named `<filename>.somnus.yaml` in the same directory | Title, summary, tags, and path are always searchable; if the host file decodes as valid UTF-8 (e.g., `.json` or `.csv`), its text body is indexed too; binary host bodies are skipped cleanly |
++| Source code & config (`.py`, `.sh`, `.toml`, `.yaml`, `.sql`, `.js`, `.ts`, `.rs`, `.c`, `.go`, `.rb`, `.lua`, `.ini`, `.tf`, `.css`, `.html`, `.vue`, `.xml`, `.tex`, ...) | Native line-comment (`#`, `//`, `--`, `%`) or block-comment (`/* */`, `<!-- -->`) envelope placed after any mandatory preamble (shebang `#!`, encoding cookie, `<?xml ...?>`, Docker `# syntax=`) | Full source/config text outside the comment envelope |
++| Build and repo files by name (`Dockerfile`, `Makefile`, `CMakeLists.txt`, `CODEOWNERS`, `MANIFEST.in`, `requirements*.txt`, `.gitignore`, `.env*`, `Gemfile`, ...) and extensionless scripts with a shebang | `#` comment envelope (Docker parser directives and the shebang stay first) | Full text outside the envelope |
++| JSON with comments (`.jsonc`, `.json5`, `tsconfig*.json`, `devcontainer.json`) | `//` comment envelope | Full text outside the envelope |
++| Jupyter notebooks (`.ipynb`) | `metadata.somnus` JSON object; every other byte untouched | Cell sources |
++| Plain `.json` objects, opt-in (`stamp --inline` or `[carriers] json = "key"`) | Leading `"$somnus"` member; other members untouched | Canonical JSON of the tree without `$somnus` |
++| Everything else (plain `.json` by default, `.txt`, `.csv`, `.pdf`, `.png`, `.zip`, `.parquet`, `.sqlite`, binary weights, ...) | External sidecar file named `<filename>.somnus.yaml` in the same directory | Title, summary, tags, and path are always searchable; if the host file decodes as valid UTF-8 (e.g., `.json` or `.csv`), its text body is indexed too; binary host bodies are skipped cleanly |
++
++Headers that 2.1 and earlier put in sidecars for hosts that now have an embedded carrier keep working. Move them inline with `somnus migrate --inline /path` (dry run) and `--write` (add `--json-key` for plain JSON objects).
++
++### 4.4 The Always-On Watcher (`somnus watch`, `somnus daemon`)
++
++The watcher is the 24/7 half of the system; the MCP server is only how agents reach the CLI.
++
++```sh
++somnus daemon install        # systemd user unit (Linux), launchd agent (macOS), logon task (Windows)
++somnus daemon status         # running?, roots, stamped, revised, errors, last pass
++somnus daemon stop | uninstall
++somnus watch                 # same loop in the foreground; --once for one pass
++loginctl enable-linger "$USER"   # Linux: keep the user service running while logged out
++```
++
++Each pass walks every registered root and opens only files whose size or mtime changed. New files that can carry an embedded header are stamped after `settle` seconds of quiet (default 10); in-place edits are recorded as new revisions (`revise = "auto"`), so editing a managed file no longer leaves an open `revision` conflict. It never writes sidecars unless `[watch] stamp = "all"`, and adopts files that existed before it started only with `--adopt` / `adopt = true`. Virtualenvs, `site-packages`, `node_modules`, `build/`, `dist/`, and VCS directories are excluded by default.
+ 
+ **Example: Adopting a binary archive or image via sidecar:**
+ 
+@@ -430,7 +451,7 @@ notes-bundle.zip.somnus.yaml: stamped urn:somnus:artifact:01a194fc-81ff-7420-883
+ 
+ `notes-bundle.zip` is never modified; `notes-bundle.zip.somnus.yaml` holds the metadata and a `bindings:` entry (`target: "notes-bundle.zip"`, `role: "primary"`). (`somnus stamp` prints the path relative to the current directory.)
+ 
+-### 4.4 Direct Read-Only SQL Queries (`q`)
++### 4.5 Direct Read-Only SQL Queries (`q`)
+ 
+ Because the registry is a human-readable SQLite database (D4), you can run any read-only `SELECT` statement directly with `somnus q`:
+ 
+diff --git a/pyproject.toml b/pyproject.toml
+index cbab45d..aac1953 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -2,7 +2,7 @@
+ # somnus:
+ #   schema: "somnus://metadata/core/2.0.0"
+ #   id: "urn:somnus:artifact:01a19a67-7c64-76c7-b059-2683252beb45"
+-#   revision: 2
++#   revision: 3
+ #   title: "Pyproject"
+ #   classification:
+ #     category: "engineering"
+@@ -18,7 +18,7 @@
+ #       - target_ref: "urn:somnus:artifact:01a19a67-7c64-76c7-b059-2683252beb45"
+ #         aspects: ["content"]
+ #   time:
+-#     updated_at: "2026-11-02T04:18:25+00:00"
++#     updated_at: "2026-11-06T06:11:46+00:00"
+ #   names:
+ #     slug: "pyproject"
+ #   knowledge:
+@@ -37,7 +37,7 @@ build-backend = "setuptools.build_meta"
+ 
+ [project]
+ name = "somnus-metadata"
+-version = "2.1.1"
++version = "2.2.0"
+ description = "Universal semantic metadata standard and engineering toolkit"
+ readme = "README.md"
+ requires-python = ">=3.11"
+diff --git a/src/somnus/__init__.py b/src/somnus/__init__.py
+index e334c6a..1a5f6c5 100644
+--- a/src/somnus/__init__.py
++++ b/src/somnus/__init__.py
+@@ -2,7 +2,7 @@
+ # somnus:
+ #   schema: "somnus://metadata/core/2.0.0"
+ #   id: "urn:somnus:artifact:01a19a67-7cc0-724c-99c0-9556e5eb871e"
+-#   revision: 2
++#   revision: 3
+ #   title: "Somnus metadata system: schema constants and package version"
+ #   classification:
+ #     category: "engineering"
+@@ -18,7 +18,7 @@
+ #       - target_ref: "urn:somnus:artifact:01a19a67-7cc0-724c-99c0-9556e5eb871e"
+ #         aspects: ["content"]
+ #   time:
+-#     updated_at: "2026-11-02T04:18:25+00:00"
++#     updated_at: "2026-11-06T06:11:46+00:00"
+ #   names:
+ #     slug: "somnus-metadata-system-schema-constants-and-package-version"
+ #   knowledge:
+@@ -33,7 +33,7 @@
+ # somnus:end
+ """Somnus metadata system: schema constants and package version."""
+ 
+-__version__ = "2.1.1"
++__version__ = "2.2.0"
+ 
+ CORE_SCHEMA = "somnus://metadata/core/2.0.0"
+ SPEC_PROFILE = "somnus://metadata/profile/specification/1.0.0"
+diff --git a/src/somnus/carriers/__init__.py b/src/somnus/carriers/__init__.py
+index 10e8508..a40eaab 100644
+--- a/src/somnus/carriers/__init__.py
++++ b/src/somnus/carriers/__init__.py
+@@ -2,7 +2,7 @@
+ # somnus:
+ #   schema: "somnus://metadata/core/2.0.0"
+ #   id: "urn:somnus:artifact:01a19a67-7ce9-703e-abd4-42f16c7c1680"
+-#   revision: 1
++#   revision: 2
+ #   title: "Carrier protocol, registry, and extension-based auto-detection (SPEC §17)"
+ #   classification:
+ #     category: "engineering"
+@@ -17,7 +17,8 @@
+ #     scopes:
+ #       - target_ref: "urn:somnus:artifact:01a19a67-7ce9-703e-abd4-42f16c7c1680"
+ #         aspects: ["content"]
+-#   time: {}
++#   time:
++#     updated_at: "2026-11-06T06:11:47+00:00"
+ #   names:
+ #     slug: "carrier-protocol-registry-and-extension-based-auto-detection-spec-17"
+ #   knowledge:
+@@ -124,6 +125,7 @@ class CarrierError(ValueError):
+ 
+ def _registry() -> dict[str, Carrier]:
+     from somnus.carriers.blockcomment import CSS, XML
++    from somnus.carriers.jsonhost import JSON_KEY, NOTEBOOK
+     from somnus.carriers.linecomment import HashCarrier, LineCarrier
+     from somnus.carriers.markdown import MarkdownCarrier
+ 
+@@ -135,6 +137,12 @@ def _registry() -> dict[str, Carrier]:
+         "r": HashCarrier("r"),
+         "toml": HashCarrier("toml"),
+         "yaml": HashCarrier("yaml"),
++        "hash": HashCarrier("hash"),
++        "dockerfile": HashCarrier("dockerfile"),
++        "lua": LineCarrier("lua", "-- ", "somnus-adapter-sql-comment@1", "lua"),
++        "jsonc": LineCarrier("jsonc", "// ", "somnus-adapter-slash-comment@1", "jsonc"),
++        "ipynb": NOTEBOOK,
++        "json": JSON_KEY,
+         "tex": LineCarrier("tex", "% ", "somnus-adapter-tex@1", "tex"),
+         "slash": LineCarrier("slash", "// ", "somnus-adapter-slash-comment@1", "slash"),
+         "js": LineCarrier("js", "// ", "somnus-adapter-slash-comment@1", "js"),
+@@ -158,8 +166,66 @@ EXTENSIONS: dict[str, str] = {
+     ".sql": "sql",
+     ".css": "css", ".scss": "css", ".less": "css",
+     ".html": "xml", ".htm": "xml", ".xhtml": "xml", ".xml": "xml", ".svg": "xml",
++    # v2.2: hash-comment hosts beyond the original matrix (SPEC §17 routing table)
++    ".rb": "hash", ".rake": "hash", ".gemspec": "hash", ".pl": "hash", ".pm": "hash",
++    ".tf": "hash", ".tfvars": "hash", ".hcl": "hash", ".nix": "hash", ".jl": "hash", ".ex": "hash",
++    ".exs": "hash", ".cr": "hash", ".nim": "hash", ".tcl": "hash", ".awk": "hash", ".sed": "hash",
++    ".fish": "hash", ".mk": "hash", ".cmake": "hash", ".cfg": "hash", ".ini": "hash", ".conf": "hash",
++    ".properties": "hash", ".env": "hash", ".gitignore": "hash", ".gitattributes": "hash",
++    ".dockerignore": "hash", ".npmignore": "hash", ".editorconfig": "hash", ".graphql": "hash",
++    ".gql": "hash", ".dockerfile": "dockerfile", ".containerfile": "dockerfile",
++    ".mojo": "python", ".pyi": "python", ".pyx": "python",
++    # slash-comment hosts
++    ".zig": "slash", ".dart": "slash", ".scala": "slash", ".proto": "slash",
++    ".groovy": "slash", ".gradle": "slash", ".mm": "slash", ".sol": "slash", ".hx": "slash", ".glsl": "slash", ".hlsl": "slash", ".wgsl": "slash",
++    ".cu": "slash", ".cuh": "slash", ".mts": "js", ".cts": "js",
++    # double-dash hosts
++    ".lua": "lua", ".hs": "lua", ".elm": "lua", ".ada": "lua", ".adb": "lua", ".ads": "lua",
++    # markup with HTML comments
++    ".vue": "xml", ".svelte": "xml", ".astro": "xml", ".xsd": "xml", ".xsl": "xml", ".xslt": "xml",
++    ".plist": "xml", ".csproj": "xml", ".vcxproj": "xml", ".resx": "xml",
++    # JSON family
++    ".jsonc": "jsonc", ".json5": "jsonc", ".ipynb": "ipynb",
+ }
+ 
++# Exact filenames that have a comment syntax but no (or a misleading) extension.
++FILENAMES: dict[str, str] = {
++    "Dockerfile": "dockerfile", "Containerfile": "dockerfile",
++    "Makefile": "hash", "makefile": "hash", "GNUmakefile": "hash", "CMakeLists.txt": "hash",
++    "CODEOWNERS": "hash", "MANIFEST.in": "hash", "requirements.txt": "hash", "constraints.txt": "hash", "Gemfile": "hash", "Rakefile": "hash",
++    "Vagrantfile": "hash", "Brewfile": "hash", "Podfile": "hash", "Fastfile": "hash",
++    "Justfile": "hash", "justfile": "hash", "Snakefile": "python", "SConstruct": "python",
++    "SConscript": "python", "BUILD": "python", "BUILD.bazel": "python", "WORKSPACE": "python",
++    "Tiltfile": "python", "Pipfile": "toml", "Caddyfile": "hash",
++    ".gitignore": "hash", ".gitattributes": "hash", ".gitmodules": "hash", ".dockerignore": "hash",
++    ".npmignore": "hash", ".prettierignore": "hash", ".eslintignore": "hash", ".hgignore": "hash",
++    ".editorconfig": "hash", ".env": "hash", ".flake8": "hash", ".pylintrc": "hash",
++    ".coveragerc": "hash", ".bashrc": "shell", ".bash_profile": "shell", ".profile": "shell",
++    ".zshrc": "shell", ".zprofile": "shell", ".inputrc": "hash", ".npmrc": "hash",
++    ".yarnrc": "hash", ".condarc": "yaml", ".clang-format": "yaml", ".clang-tidy": "yaml",
++    "tsconfig.json": "jsonc", "jsconfig.json": "jsonc", "devcontainer.json": "jsonc",
++    ".devcontainer.json": "jsonc", ".eslintrc.json": "jsonc",
++    ".babelrc": "jsonc", "tslint.json": "jsonc", "api-extractor.json": "jsonc",
++}
++
++# Filename patterns (prefix, suffix) checked after exact names.
++_PATTERNS: tuple[tuple[str, str, str], ...] = (
++    ("requirements", ".txt", "hash"), ("constraints", ".txt", "hash"), (".env.", "", "hash"),
++    ("Dockerfile.", "", "dockerfile"), ("Containerfile.", "", "dockerfile"),
++    ("tsconfig.", ".json", "jsonc"), ("jsconfig.", ".json", "jsonc"),
++)
++
++# Shebang interpreter -> carrier, for extensionless executables.
++_SHEBANG = {
++    "python": "python", "python3": "python", "python2": "python", "pypy": "python", "pypy3": "python",
++    "sh": "shell", "bash": "shell", "zsh": "shell", "dash": "shell", "ksh": "shell", "fish": "shell",
++    "node": "js", "deno": "js", "bun": "js", "tsx": "js", "ts-node": "js",
++    "ruby": "hash", "perl": "hash", "Rscript": "r", "pwsh": "powershell", "awk": "hash",
++    "julia": "hash", "elixir": "hash", "tclsh": "hash", "lua": "lua", "make": "hash",
++}
++
++SNIFF_BYTES = 512
++
+ _CACHE: dict[str, Carrier] = {}
+ 
+ 
+@@ -185,12 +251,86 @@ def host_for(sidecar: Path) -> Path:
+     return sidecar.with_name(sidecar.name[: -len(SIDECAR_SUFFIX)])
+ 
+ 
+-def carrier_name_for(path: Path) -> Optional[str]:
+-    """Return the embedded carrier name for a path, or None when a sidecar is required."""
++def _sniff(path: Path) -> bytes:
++    try:
++        with open(path, "rb") as fh:
++            return fh.read(SNIFF_BYTES)
++    except OSError:
++        return b""
++
++
++def shebang_carrier(head: bytes) -> Optional[str]:
++    """Carrier for a ``#!`` interpreter line, or None."""
++    if head.startswith(b"\xef\xbb\xbf"):
++        head = head[3:]
++    if not head.startswith(b"#!"):
++        return None
++    first = head.split(b"\n", 1)[0].decode("utf-8", "replace").strip()[2:].split()
++    if not first:
++        return None
++    prog = first[0].rsplit("/", 1)[-1]
++    if prog == "env":
++        rest = [a for a in first[1:] if not a.startswith("-") and "=" not in a]
++        if not rest:
++            return None
++        prog = rest[0].rsplit("/", 1)[-1]
++    if prog not in _SHEBANG:
++        prog = prog.rstrip("0123456789.")
++    return _SHEBANG.get(prog)
++
++
++def carrier_name_for(path: Path, *, sniff: bool = True) -> Optional[str]:
++    """Return the embedded carrier name for a path, or None when a sidecar is required.
++
++    Routing order (SPEC §17): sidecar files, exact filenames, filename patterns,
++    extensions, then (for extensionless files) the shebang interpreter. Plain
++    ``.json`` is embedded only when the file already carries a leading
++    ``"$somnus"`` key (opt-in, §17.8); otherwise it stays a sidecar host.
++    """
+     if is_sidecar_path(path):
+         return None
++    name = path.name
++    if name in FILENAMES:
++        return FILENAMES[name]
++    for prefix, suffix, carrier in _PATTERNS:
++        if name.startswith(prefix) and name.endswith(suffix) and len(name) > len(prefix) + len(suffix):
++            return carrier
+     suffix = path.suffix if path.suffix in EXTENSIONS else path.suffix.lower()
+-    return EXTENSIONS.get(suffix)
++    if suffix in EXTENSIONS:
++        return EXTENSIONS[suffix]
++    if suffix == ".json":
++        if sniff and json_key_present(_sniff(path)):
++            return "json"
++        return None
++    if sniff and (not suffix or suffix not in _KNOWN_BINARY) and path.is_file():
++        return shebang_carrier(_sniff(path))
++    return None
++
++
++_KNOWN_BINARY = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".pdf", ".zip", ".gz", ".tgz", ".xz", ".bz2",
++                 ".whl", ".so", ".dll", ".dylib", ".exe", ".bin", ".o", ".a", ".pyc", ".db", ".sqlite",
++                 ".parquet", ".docx", ".xlsx", ".pptx", ".mp3", ".mp4", ".wav", ".mov", ".ttf", ".woff", ".woff2"}
++
++
++def json_key_present(head: bytes) -> bool:
++    """True when JSON text opens with an object whose first key is ``"$somnus"``."""
++    text = head.decode("utf-8", "ignore").lstrip("\ufeff \t\r\n")
++    if not text.startswith("{"):
++        return False
++    return text[1:].lstrip(" \t\r\n").startswith('"$somnus"')
++
++
++def for_text(path: Path, text: str) -> Optional[Carrier]:
++    """Embedded carrier for in-memory ``text`` claimed to live at ``path`` (no disk access)."""
++    name = carrier_name_for(path, sniff=False)
++    if name is None and not is_sidecar_path(path):
++        head = text.encode("utf-8")[:SNIFF_BYTES]
++        suffix = path.suffix.lower()
++        if suffix == ".json":
++            name = "json" if json_key_present(head) else None
++        elif not suffix or suffix not in EXTENSIONS:
++            name = shebang_carrier(head)
++    return get(name) if name else None
+ 
+ 
+ def for_path(path: Path) -> Optional[Carrier]:
+diff --git a/src/somnus/carriers/jsonhost.py b/src/somnus/carriers/jsonhost.py
+new file mode 100644
+index 0000000..0c58d35
+--- /dev/null
++++ b/src/somnus/carriers/jsonhost.py
+@@ -0,0 +1,278 @@
++# somnus:metadata:v2
++# somnus:
++#   schema: "somnus://metadata/core/2.0.0"
++#   id: "urn:somnus:artifact:01a1af7c-09e6-770f-95ff-1f5cf45f6a6e"
++#   revision: 1
++#   title: "JSON-tree carriers: the \"$somnus\" key and Jupyter notebook metadata (SPEC §17.7, §17.8)"
++#   classification:
++#     category: "engineering"
++#     type: "source-code"
++#     role: "informative"
++#     scope: "component"
++#     tags: []
++#   lifecycle:
++#     status: "draft"
++#   authority:
++#     standing: "candidate"
++#     scopes:
++#       - target_ref: "urn:somnus:artifact:01a1af7c-09e6-770f-95ff-1f5cf45f6a6e"
++#         aspects: ["content"]
++#   time: {}
++#   names:
++#     slug: "json-tree-carriers-the-somnus-key-and-jupyter-notebook-metadata-spec-17-7-17-8"
++#   knowledge:
++#     coverage: "artifact"
++#     subjects: ["urn:somnus:artifact:01a1af7c-09e6-770f-95ff-1f5cf45f6a6e"]
++#   access:
++#     visibility: "internal"
++#     allowed_uses: ["archive", "search", "reason"]
++#   ingestion:
++#     disposition: "candidate"
++#     body_role: "source"
++# somnus:end
++"""JSON-tree carriers: the ``"$somnus"`` key and Jupyter notebook metadata (SPEC §17.7, §17.8).
++
++Strict JSON has no comments, so these carriers store the payload as a JSON
++object inside the host's own data tree and splice it in as text: every byte
++outside the carrier's value is left alone. The host-preservation contract is
++the data tree: the host parsed with the carrier key removed must be identical
++before and after a write (``E_HOST`` otherwise).
++
++* ``json`` (opt-in): a leading top-level ``"$somnus"`` key in an object document.
++* ``ipynb``: ``metadata.somnus`` in a notebook (nbformat preserves unknown
++  metadata keys, so Jupyter round-trips it).
++"""
++
++from __future__ import annotations
++
++import json
++from typing import Any, Optional
++
++from somnus import yamlsub
++from somnus.carriers import CarrierError, Envelope, Extraction, Issue, Splice
++
++_WS = " \t\r\n"
++_DECODER = json.JSONDecoder()
++
++
++class _Span:
++    __slots__ = ("key", "key_start", "value_start", "value_end", "member_end")
++
++    def __init__(self, key: str, key_start: int, value_start: int, value_end: int, member_end: int):
++        self.key = key
++        self.key_start = key_start
++        self.value_start = value_start
++        self.value_end = value_end
++        self.member_end = member_end  # index after the trailing comma, or value_end for the last member
++
++
++def _skip(text: str, i: int) -> int:
++    while i < len(text) and text[i] in _WS:
++        i += 1
++    return i
++
++
++def object_members(text: str, start: int) -> tuple[list[_Span], int, int]:
++    """Members of the JSON object opening at ``start``; returns (spans, open brace index, close brace index)."""
++    i = _skip(text, start)
++    if i >= len(text) or text[i] != "{":
++        raise ValueError("not a JSON object")
++    open_at = i
++    i = _skip(text, i + 1)
++    spans: list[_Span] = []
++    if i < len(text) and text[i] == "}":
++        return spans, open_at, i
++    while True:
++        key_start = i
++        key, i = _DECODER.raw_decode(text, i)
++        if not isinstance(key, str):
++            raise ValueError("object key is not a string")
++        i = _skip(text, i)
++        if i >= len(text) or text[i] != ":":
++            raise ValueError("expected ':'")
++        value_start = _skip(text, i + 1)
++        _, value_end = _DECODER.raw_decode(text, value_start)
++        i = _skip(text, value_end)
++        if i < len(text) and text[i] == ",":
++            spans.append(_Span(key, key_start, value_start, value_end, i + 1))
++            i = _skip(text, i + 1)
++            continue
++        if i < len(text) and text[i] == "}":
++            spans.append(_Span(key, key_start, value_start, value_end, value_end))
++            return spans, open_at, i
++        raise ValueError("expected ',' or '}'")
++
++
++def _indent_unit(text: str) -> str:
++    """Indentation step used by the host (defaults to two spaces; ``""`` for minified JSON)."""
++    if "\n" not in text.strip():
++        return ""
++    for line in text.split("\n")[1:]:
++        stripped = line.lstrip(" \t")
++        if stripped and len(stripped) < len(line):
++            return line[: len(line) - len(stripped)]
++    return "  "
++
++
++def _line_col(text: str, index: int) -> tuple[int, int]:
++    line = text.count("\n", 0, index)
++    col = index - (text.rfind("\n", 0, index) + 1)
++    return line, col
++
++
++class _TreeCarrier:
++    """Shared machinery: locate a key inside a nested object path and splice its value."""
++
++    name = "json"
++    capability = "somnus-adapter-json-key@1"
++    forbid: Optional[str] = None
++    region_style: tuple = ()
++    container: tuple[str, ...] = ()
++    key = "$somnus"
++    first = True  # insert as the first member of the container
++
++    # -------------------------------------------------------------- locating
++    def _container(self, text: str) -> tuple[list[_Span], int, int, int]:
++        """Spans of the container object, its brace indexes, and its depth."""
++        spans, open_at, close_at = object_members(text, 0)
++        if _skip(text, close_at + 1) != len(text):
++            raise ValueError("trailing content after the JSON document")
++        depth = 1
++        for part in self.container:
++            hit = [s for s in spans if s.key == part]
++            if len(hit) != 1:
++                raise KeyError(part)
++            spans, open_at, close_at = object_members(text, hit[0].value_start)
++            depth += 1
++        return spans, open_at, close_at, depth
++
++    def tree_without_key(self, text: str) -> Any:
++        """Parsed host with the carrier key removed (the preserved data tree)."""
++        tree = json.loads(text)
++        node = tree
++        for part in self.container:
++            node = node.get(part) if isinstance(node, dict) else None
++        if isinstance(node, dict):
++            node.pop(self.key, None)
++        return tree
++
++    # -------------------------------------------------------------- protocol
++    def extract(self, lines: list[str]) -> Extraction:
++        """Find the carrier key; its value (a mapping) becomes the YAML payload."""
++        text = "\n".join(lines)
++        result = Extraction()
++        try:
++            spans, _, _, _ = self._container(text)
++        except KeyError:
++            return result
++        except ValueError as exc:
++            result.issues.append(Issue(1, 1, "E_ENVELOPE", f"host is not a JSON object document: {exc}"))
++            return result
++        hits = [s for s in spans if s.key == self.key]
++        if not hits:
++            return result
++        if len(hits) > 1:
++            line, col = _line_col(text, hits[1].key_start)
++            result.issues.append(Issue(line + 1, col + 1, "E_ENVELOPE", f"duplicate {self.key!r} key"))
++        span = hits[0]
++        line, col = _line_col(text, span.key_start)
++        value = json.loads(text[span.value_start:span.value_end])
++        if not isinstance(value, dict):
++            result.issues.append(Issue(line + 1, col + 1, "E_ENVELOPE", f"{self.key!r} must be an object"))
++            return result
++        try:
++            payload = yamlsub.dumps({"somnus": value})
++        except (yamlsub.YAMLError, TypeError, ValueError) as exc:
++            result.issues.append(Issue(line + 1, col + 1, "E_YAML", f"{self.key!r} value is outside the Somnus "
++                                                                   f"subset: {getattr(exc, 'message', exc)}"))
++            return result
++        result.envelope = Envelope(self.name, 0, len(lines), payload.rstrip("\n").split("\n"), line,
++                                   mask_start=0, mask_end=len(lines))
++        return result
++
++    def render(self, lines: list[str], payload: str, envelope: Optional[Envelope], style: Optional[str] = None) -> Splice:
++        """Splice the payload object into the host text without touching other members."""
++        text = "\n".join(lines)
++        data = yamlsub.parse(payload).data
++        value = data["somnus"] if isinstance(data, dict) else None
++        if not isinstance(value, dict):
++            raise CarrierError("E_ENVELOPE", "payload must be a mapping")
++        try:
++            spans, open_at, close_at, depth = self._container(text)
++        except KeyError as exc:
++            raise CarrierError("E_HOST", f"host has no {'.'.join(self.container)!r} object") from exc
++        except ValueError as exc:
++            raise CarrierError("E_HOST", f"host is not a JSON object document: {exc}") from exc
++        unit = _indent_unit(text)
++        if unit:
++            rendered = json.dumps(value, indent=unit, ensure_ascii=False)
++            rendered = rendered.replace("\n", "\n" + unit * depth)
++        else:
++            rendered = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
++        hits = [s for s in spans if s.key == self.key]
++        if hits:
++            span = hits[0]
++            new_text = text[: span.value_start] + rendered + text[span.value_end:]
++        else:
++            member = json.dumps(self.key) + (": " if unit else ":") + rendered
++            if not spans:
++                if unit:
++                    inner = "\n" + unit * depth + member + "\n" + unit * (depth - 1)
++                else:
++                    inner = member
++                new_text = text[: open_at + 1] + inner + text[close_at:]
++            elif self.first:
++                lead = text[open_at + 1: spans[0].key_start]
++                new_text = text[: open_at + 1] + lead + member + "," + lead + text[spans[0].key_start:]
++            else:
++                last = spans[-1]
++                lead = text[spans[-2].member_end:last.key_start] if len(spans) > 1 else text[open_at + 1:last.key_start]
++                new_text = text[: last.value_end] + "," + lead + member + text[last.value_end:]
++        new_lines = new_text.split("\n")
++        if new_lines and new_lines[-1] == "" and lines and lines[-1] != "":
++            new_lines.pop()
++        return Splice(0, len(lines), new_lines)
++
++    def host_view(self, lines: list[str]) -> list[str]:
++        """Canonical text of the preserved data tree (the 'body' for digests and search)."""
++        try:
++            tree = self.tree_without_key("\n".join(lines))
++        except ValueError:
++            return list(lines)
++        return json.dumps(tree, ensure_ascii=False, sort_keys=True, indent=1).split("\n")
++
++
++class JsonKeyCarrier(_TreeCarrier):
++    """Opt-in ``"$somnus"`` first member of a top-level JSON object."""
++
++    name = "json"
++    capability = "somnus-adapter-json-key@1"
++    container = ()
++    key = "$somnus"
++    first = True
++
++
++class NotebookCarrier(_TreeCarrier):
++    """``metadata.somnus`` inside a Jupyter notebook."""
++
++    name = "ipynb"
++    capability = "somnus-adapter-notebook@1"
++    container = ("metadata",)
++    key = "somnus"
++    first = False
++
++    def host_view(self, lines: list[str]) -> list[str]:
++        """Cell sources (what a reader searches for), falling back to the canonical tree."""
++        try:
++            tree = self.tree_without_key("\n".join(lines))
++        except ValueError:
++            return list(lines)
++        out: list[str] = []
++        for cell in tree.get("cells", []) if isinstance(tree, dict) else []:
++            src = cell.get("source", "") if isinstance(cell, dict) else ""
++            out.extend(("".join(src) if isinstance(src, list) else str(src)).split("\n"))
++        return out if out else json.dumps(tree, ensure_ascii=False, sort_keys=True, indent=1).split("\n")
++
++
++JSON_KEY = JsonKeyCarrier()
++NOTEBOOK = NotebookCarrier()
+diff --git a/src/somnus/carriers/linecomment.py b/src/somnus/carriers/linecomment.py
+index b2bcbff..6e0b340 100644
+--- a/src/somnus/carriers/linecomment.py
++++ b/src/somnus/carriers/linecomment.py
+@@ -2,7 +2,7 @@
+ # somnus:
+ #   schema: "somnus://metadata/core/2.0.0"
+ #   id: "urn:somnus:artifact:01a19a67-7d39-7300-a172-9e6fba2a9f4a"
+-#   revision: 1
++#   revision: 2
+ #   title: "Comment-prefixed carriers: # , % , // , --  (SPEC §17.3, §17.5)"
+ #   classification:
+ #     category: "engineering"
+@@ -17,7 +17,8 @@
+ #     scopes:
+ #       - target_ref: "urn:somnus:artifact:01a19a67-7d39-7300-a172-9e6fba2a9f4a"
+ #         aspects: ["content"]
+-#   time: {}
++#   time:
++#     updated_at: "2026-11-06T06:11:47+00:00"
+ #   names:
+ #     slug: "comment-prefixed-carriers-spec-17-3-17-5"
+ #   knowledge:
+@@ -42,13 +43,15 @@ from somnus.carriers import Envelope, Extraction, Issue, Splice
+ _COOKIE = re.compile(r"^[ \t\f]*#.*?coding[:=][ \t]*[-\w.]+")
+ _REQUIRES = re.compile(r"^#requires\b", re.IGNORECASE)
+ _TEX_MAGIC = re.compile(r"^%\s*!tex\b", re.IGNORECASE)
++_DOCKER_DIRECTIVE = re.compile(r"^#\s*[A-Za-z][A-Za-z0-9]*\s*=")
++_SHEBANG_HOSTS = ("python", "shell", "r", "js", "powershell", "hash", "lua")
+ 
+ 
+ def preamble_end(host: str, lines: list[str]) -> int:
+     """Return the index of the first line after mandatory host preamble lines."""
+     i = 0
+     n = len(lines)
+-    if host in ("python", "shell", "r", "js", "powershell") and n and lines[0].startswith("#!"):
++    if host in _SHEBANG_HOSTS and n and lines[0].startswith("#!"):
+         i = 1
+     if host == "python":
+         if i == 0 and n and _COOKIE.match(lines[0]):
+@@ -58,6 +61,10 @@ def preamble_end(host: str, lines: list[str]) -> int:
+     elif host == "powershell":
+         while i < n and _REQUIRES.match(lines[i]):
+             i += 1
++    elif host == "dockerfile":
++        # BuildKit parser directives (# syntax=, # escape=, # check=) must stay first.
++        while i < n and _DOCKER_DIRECTIVE.match(lines[i]):
++            i += 1
+     elif host == "tex":
+         while i < n and _TEX_MAGIC.match(lines[i]):
+             i += 1
+diff --git a/src/somnus/cli.py b/src/somnus/cli.py
+index 607455a..cc6cef6 100644
+--- a/src/somnus/cli.py
++++ b/src/somnus/cli.py
+@@ -2,7 +2,7 @@
+ # somnus:
+ #   schema: "somnus://metadata/core/2.0.0"
+ #   id: "urn:somnus:artifact:01a19a67-7d80-716b-9aec-7612ca19c965"
+-#   revision: 1
++#   revision: 2
+ #   title: "Argument parsing and lazy command dispatch for the somnus CLI (SPEC §20)"
+ #   classification:
+ #     category: "engineering"
+@@ -17,7 +17,8 @@
+ #     scopes:
+ #       - target_ref: "urn:somnus:artifact:01a19a67-7d80-716b-9aec-7612ca19c965"
+ #         aspects: ["content"]
+-#   time: {}
++#   time:
++#     updated_at: "2026-11-06T06:11:47+00:00"
+ #   names:
+ #     slug: "argument-parsing-and-lazy-command-dispatch-for-the-somnus-cli-spec-20"
+ #   knowledge:
+@@ -89,6 +90,8 @@ def build_parser(commands: Optional[dict[str, argparse.ArgumentParser]] = None)
+     p.add_argument("--write", action="store_true")
+     p.add_argument("--type", choices=vocab.TYPES)
+     p.add_argument("--title")
++    p.add_argument("--inline", action="store_true",
++                   help="embed in plain .json object files as a leading \"$somnus\" key instead of a sidecar")
+ 
+     p = cmd("check", "validate documents and print diagnostics")
+     p.add_argument("paths", nargs="*", metavar="PATH")
+@@ -145,9 +148,13 @@ def build_parser(commands: Optional[dict[str, argparse.ArgumentParser]] = None)
+     p.add_argument("--sync", action="store_true", help="register unregistered markers")
+     p.add_argument("--write", action="store_true")
+ 
+-    p = cmd("migrate", "upgrade v0.1 documents (dry-run diff unless --write)")
++    p = cmd("migrate", "upgrade v0.1 documents, or move sidecars inline with --inline (dry-run diff unless --write)")
+     p.add_argument("paths", nargs="+", metavar="PATH")
+     p.add_argument("--write", action="store_true")
++    p.add_argument("--inline", action="store_true",
++                   help="move <file>.somnus.yaml headers into hosts that now have an embedded carrier")
++    p.add_argument("--json-key", dest="json_key", action="store_true",
++                   help="with --inline: also embed plain .json object files as a leading \"$somnus\" key")
+ 
+     p = cmd("stale", "report stale drafts, missing files, near-duplicates, and conflicts")
+     p.add_argument("--days", type=int, default=30, metavar="N")
+@@ -162,6 +169,25 @@ def build_parser(commands: Optional[dict[str, argparse.ArgumentParser]] = None)
+     p = cmd("edit", "terminal UI: document browser, or header editor")
+     p.add_argument("path", nargs="?", metavar="PATH")
+ 
++    p = cmd("watch", "run the always-on watcher in the foreground (stamps and indexes registered roots)")
++    p.add_argument("roots", nargs="*", metavar="ROOT", help="roots to watch (default: every registered root)")
++    p.add_argument("--interval", type=float, metavar="SECONDS", help="poll interval (config watch.interval)")
++    p.add_argument("--settle", type=float, metavar="SECONDS",
++                   help="quiet time before a new file is stamped (config watch.settle)")
++    p.add_argument("--stamp", choices=("off", "inline", "all"),
++                   help="unmanaged files: off = index only, inline = embed where a carrier exists, all = also sidecars")
++    p.add_argument("--adopt", action="store_true", help="also stamp files that were unmanaged before the watcher started")
++    p.add_argument("--revise", choices=("off", "auto"),
++                   help="auto = record in-place edits as new revisions (config watch.revise)")
++    p.add_argument("--once", action="store_true", help="one pass, then exit")
++    p.add_argument("--quiet", action="store_true", help="no per-file log lines")
++
++    p = cmd("daemon", "manage the 24/7 watcher service: status, install, uninstall, stop, once")
++    p.add_argument("action", choices=("status", "install", "uninstall", "stop", "once"), metavar="ACTION",
++                   help="status | install | uninstall | stop | once")
++    p.add_argument("--dry-run", dest="dry_run", action="store_true", help="install/uninstall: print, change nothing")
++    p.add_argument("--adopt", action="store_true", help="once: also stamp files that were already unmanaged")
++
+     cmd("mcp", "serve the non-interactive commands as MCP tools over stdio")
+     return parser
+ 
+diff --git a/src/somnus/commands/brief.py b/src/somnus/commands/brief.py
+index f517ab8..4909266 100644
+--- a/src/somnus/commands/brief.py
++++ b/src/somnus/commands/brief.py
+@@ -2,7 +2,7 @@
+ # somnus:
+ #   schema: "somnus://metadata/core/2.0.0"
+ #   id: "urn:somnus:artifact:01a19a67-7dd0-7013-8d7c-5fdf050b0118"
+-#   revision: 1
++#   revision: 2
+ #   title: "somnus brief: a Markdown cheat sheet for agent instruction files"
+ #   classification:
+ #     category: "engineering"
+@@ -17,7 +17,8 @@
+ #     scopes:
+ #       - target_ref: "urn:somnus:artifact:01a19a67-7dd0-7013-8d7c-5fdf050b0118"
+ #         aspects: ["content"]
+-#   time: {}
++#   time:
++#     updated_at: "2026-11-06T06:11:48+00:00"
+ #   names:
+ #     slug: "somnus-brief-a-markdown-cheat-sheet-for-agent-instruction-files"
+ #   knowledge:
+@@ -41,7 +42,10 @@ from somnus.output import EXIT_OK, emit
+ BRIEF = f"""## Somnus metadata (core `{CORE_SCHEMA}`)
+ 
+ Normative contract: `SPEC.md`. Every managed file carries exactly one `somnus:` envelope
+-(Markdown frontmatter, a comment envelope in code/config files, or a `<file>.somnus.yaml` sidecar).
++inside the file wherever its format allows (Markdown frontmatter, a comment envelope in code, config,
++and build files, `metadata.somnus` in notebooks, opt-in `"$somnus"` in JSON). Only formats with no
++place for it use a `<file>.somnus.yaml` sidecar. A 24/7 watcher (`somnus daemon status`) may stamp new
++files and record in-place edits as new revisions; re-read a file before editing its envelope.
+ 
+ **Rules for agents**
+ 
+@@ -68,6 +72,8 @@ Normative contract: `SPEC.md`. Every managed file carries exactly one `somnus:`
+ | New revision | `somnus bump PATH [--reason …]` |
+ | Derive a copy | `somnus fork PATH [--title …]` |
+ | Upgrade v0.1 | `somnus migrate PATH` then `--write` |
++| Move old sidecars inline | `somnus migrate --inline PATH` then `--write` |
++| Watcher state | `somnus daemon status` (install: `somnus daemon install`) |
+ | Registry | `somnus index`, `somnus ls`, `somnus q --docs\\|--conflicts\\|--history`, `somnus stale` |
+ | Search content | `somnus q --text "words to find"` (every word must match; `word*` is a prefix) |
+ | Field docs | `somnus schema classification.type` |
+diff --git a/src/somnus/commands/daemon.py b/src/somnus/commands/daemon.py
+new file mode 100644
+index 0000000..a5a34c2
+--- /dev/null
++++ b/src/somnus/commands/daemon.py
+@@ -0,0 +1,117 @@
++# somnus:metadata:v2
++# somnus:
++#   schema: "somnus://metadata/core/2.0.0"
++#   id: "urn:somnus:artifact:01a1af7c-0a01-706c-8a98-619b5a23d480"
++#   revision: 1
++#   title: "somnus daemon: install, inspect, and stop the 24/7 watcher service (D20)"
++#   classification:
++#     category: "engineering"
++#     type: "source-code"
++#     role: "informative"
++#     scope: "component"
++#     tags: []
++#   lifecycle:
++#     status: "draft"
++#   authority:
++#     standing: "candidate"
++#     scopes:
++#       - target_ref: "urn:somnus:artifact:01a1af7c-0a01-706c-8a98-619b5a23d480"
++#         aspects: ["content"]
++#   time: {}
++#   names:
++#     slug: "somnus-daemon-install-inspect-and-stop-the-24-7-watcher-service-d20"
++#   knowledge:
++#     coverage: "artifact"
++#     subjects: ["urn:somnus:artifact:01a1af7c-0a01-706c-8a98-619b5a23d480"]
++#   access:
++#     visibility: "internal"
++#     allowed_uses: ["archive", "search", "reason"]
++#   ingestion:
++#     disposition: "candidate"
++#     body_role: "source"
++# somnus:end
++"""``somnus daemon``: install, inspect, and stop the 24/7 watcher service (D20)."""
++
++from __future__ import annotations
++
++import os
++import signal
++import time
++
++from somnus import service
++from somnus.commands._common import Ctx, note
++from somnus.output import EXIT_INVALID, EXIT_OK, emit
++from somnus.watch import Settings, Watcher, read_status
++
++
++def _status(ctx: Ctx) -> int:
++    data = read_status(ctx.cfg.home)
++    if data is None:
++        emit("watcher: never ran (install it with 'somnus daemon install', or run 'somnus watch')")
++        return EXIT_INVALID
++    counters = data.get("counters", {})
++    settings = data.get("settings", {})
++    rows = [
++        ("state", "running" if data.get("running") else "stopped"),
++        ("pid", data.get("pid")),
++        ("version", data.get("version")),
++        ("started", data.get("started_at")),
++        ("last pass", data.get("last_tick_at")),
++        ("stamp mode", settings.get("stamp")),
++        ("interval", f"{settings.get('interval')}s (settle {settings.get('settle')}s)"),
++        ("roots", ", ".join(data.get("roots", [])) or "(none registered)"),
++        ("tracked files", data.get("tracked_files")),
++        ("stamped", counters.get("stamped")),
++        ("revised", counters.get("revised")),
++        ("indexed", counters.get("indexed")),
++        ("errors", counters.get("errors")),
++    ]
++    ctx.table(["field", "value"], rows)
++    return EXIT_OK if data.get("running") else EXIT_INVALID
++
++
++def _stop(ctx: Ctx) -> int:
++    data = read_status(ctx.cfg.home)
++    if not data or not data.get("running"):
++        note("watcher is not running")
++        return EXIT_OK
++    pid = int(data.get("pid", 0))
++    try:
++        os.kill(pid, signal.SIGTERM)
++    except OSError as exc:
++        note(f"cannot signal pid {pid}: {exc}")
++        return EXIT_INVALID
++    for _ in range(40):
++        time.sleep(0.25)
++        fresh = read_status(ctx.cfg.home)
++        if not fresh or not fresh.get("running"):
++            note(f"stopped watcher pid {pid} (a service manager with restart-on-failure may not restart a clean stop)")
++            return EXIT_OK
++    note(f"watcher pid {pid} did not stop within 10s")
++    return EXIT_INVALID
++
++
++def run(args, ctx: Ctx) -> int:
++    """Dispatch the daemon action."""
++    action = args.action
++    if action == "status":
++        return _status(ctx)
++    if action == "stop":
++        return _stop(ctx)
++    if action == "once":
++        settings = Settings.from_config(ctx.cfg, adopt=True if args.adopt else None)
++        return Watcher(ctx.cfg.home, settings, log=note).run(once=True)
++    if action in ("install", "uninstall"):
++        plan = service.install_plan(ctx.cfg.home) if action == "install" else service.uninstall_plan()
++        if args.dry_run:
++            if plan.path is not None:
++                emit(f"# {plan.path}\n{plan.content}" if plan.content else f"# remove {plan.path}")
++            for argv in plan.commands:
++                emit("$ " + " ".join(argv))
++            return EXIT_OK
++        lines = service.apply(plan, install=action == "install")
++        for line in lines:
++            note(line)
++        failed = any(": exit " in line for line in lines)
++        return EXIT_INVALID if failed else EXIT_OK
++    return EXIT_INVALID
+diff --git a/src/somnus/commands/inline.py b/src/somnus/commands/inline.py
+new file mode 100644
+index 0000000..6c35065
+--- /dev/null
++++ b/src/somnus/commands/inline.py
+@@ -0,0 +1,163 @@
++# somnus:metadata:v2
++# somnus:
++#   schema: "somnus://metadata/core/2.0.0"
++#   id: "urn:somnus:artifact:01a1af7c-0a13-77c5-8433-54c3d9210784"
++#   revision: 1
++#   title: "somnus migrate --inline: move sidecar headers into hosts that now have an embedded carrier (D20)"
++#   classification:
++#     category: "engineering"
++#     type: "source-code"
++#     role: "informative"
++#     scope: "component"
++#     tags: []
++#   lifecycle:
++#     status: "draft"
++#   authority:
++#     standing: "candidate"
++#     scopes:
++#       - target_ref: "urn:somnus:artifact:01a1af7c-0a13-77c5-8433-54c3d9210784"
++#         aspects: ["content"]
++#   time: {}
++#   names:
++#     slug: "somnus-migrate-inline-move-sidecar-headers-into-hosts-that-now-have-an-embedded"
++#   knowledge:
++#     coverage: "artifact"
++#     subjects: ["urn:somnus:artifact:01a1af7c-0a13-77c5-8433-54c3d9210784"]
++#   access:
++#     visibility: "internal"
++#     allowed_uses: ["archive", "search", "reason"]
++#   ingestion:
++#     disposition: "candidate"
++#     body_role: "source"
++# somnus:end
++"""``somnus migrate --inline``: move sidecar headers into hosts that now have an embedded carrier (D20).
++
++A sidecar created before a host type gained a carrier (CODEOWNERS, Dockerfile,
++``.ipynb``, shebang scripts, ...) keeps working, but the operator intent is one
++envelope inside every file that can carry it. This command moves the payload
++into the host, keeps the artifact ID, drops the sidecar-only ``bindings`` field,
++records a new revision, and deletes the sidecar only after the host write
++re-extracts cleanly.
++"""
++
++from __future__ import annotations
++
++import os
++from pathlib import Path
++from typing import Iterator, Optional
++
++from somnus import carriers
++from somnus import document as D
++from somnus.carriers.jsonhost import JSON_KEY, object_members
++from somnus.commands._common import Ctx, display, note, unified
++from somnus.model.lifecycle import bump_revision
++from somnus.model.validate import validate
++from somnus.output import EXIT_INVALID, EXIT_OK, SomnusError, emit
++from somnus.db.store import glob_regex, matches_any
++
++
++def sidecars(paths: list[Path], exclude: list[str]) -> Iterator[Path]:
++    """Sidecar files named directly, or found under named directories."""
++    patterns = [glob_regex(p) for p in exclude]
++    for path in paths:
++        if path.is_file():
++            side = path if carriers.is_sidecar_path(path) else carriers.sidecar_for(path)
++            if side.is_file():
++                yield side
++            continue
++        for dirpath, dirnames, filenames in os.walk(path):
++            rel_dir = Path(os.path.relpath(dirpath, path)).as_posix()
++            prefix = "" if rel_dir == "." else rel_dir + "/"
++            dirnames[:] = sorted(d for d in dirnames
++                                 if d not in (".git", ".hg", ".svn") and not matches_any(prefix + d + "/", patterns))
++            for name in sorted(filenames):
++                if name.endswith(carriers.SIDECAR_SUFFIX) and not matches_any(prefix + name, patterns):
++                    yield Path(dirpath) / name
++
++
++def target_carrier(host: Path, json_key: bool):
++    """Embedded carrier the host should use now, or None when it must stay a sidecar."""
++    carrier = carriers.for_path(host)
++    if carrier is not None:
++        return carrier
++    if json_key and host.suffix.lower() == ".json":
++        try:
++            object_members(host.read_text(encoding="utf-8-sig"), 0)
++        except (OSError, ValueError):
++            return None
++        return JSON_KEY
++    return None
++
++
++def plan(sidecar: Path, json_key: bool) -> Optional[tuple[Path, str, str, dict, str]]:
++    """Return (host, old host text, new host text, payload, reason) or None with a reason noted."""
++    host = carriers.host_for(sidecar)
++    if not host.is_file():
++        note(f"{display(sidecar)}: host is missing; skipped")
++        return None
++    carrier = target_carrier(host, json_key)
++    if carrier is None:
++        return None
++    meta = D.load(sidecar)
++    if meta.payload is None or [d for d in validate(meta, "core") if d.is_error]:
++        note(f"{display(sidecar)}: sidecar does not validate at core; fix it first (somnus check)")
++        return None
++    bindings = meta.payload.get("bindings", [])
++    if any(isinstance(b, dict) and b.get("role") != "primary" for b in bindings):
++        note(f"{display(sidecar)}: has attachment/representation bindings; it stays a sidecar")
++        return None
++    try:
++        doc = D.as_carrier(host, carrier)
++    except SomnusError:
++        note(f"{display(host)}: host is not UTF-8 text; it stays a sidecar")
++        return None
++    if doc.envelope is not None or doc.issues:
++        note(f"{display(host)}: host already has an envelope (or a malformed one); resolve with somnus check")
++        return None
++    payload = meta.copy_payload()
++    payload.pop("bindings", None)
++    bump_revision(payload)
++    new = doc.render(payload)
++    old = "".join(line + end for line, end in zip(doc.lines, doc.endings, strict=True))
++    return host, old, new, payload, carrier.name
++
++
++def run(args, ctx: Ctx) -> int:
++    """Dry-run diff by default; ``--write`` moves each header and removes its sidecar."""
++    status = EXIT_OK
++    json_key = bool(getattr(args, "json_key", False)) or ctx.cfg.json_carrier == "key"
++    moved = 0
++    for side in sidecars([Path(p).resolve() for p in args.paths], ctx.cfg.exclude):
++        try:
++            result = plan(side, json_key)
++        except SomnusError as exc:
++            ctx.diagnostics(exc.diagnostics)
++            status = max(status, exc.exit_code)
++            continue
++        if result is None:
++            continue
++        host, old, new, payload, cname = result
++        carrier = target_carrier(host, json_key)
++        if [d for d in validate(D.from_text(host, new), "core") if d.is_error]:
++            note(f"{display(host)}: inline result does not validate; left as a sidecar")
++            status = EXIT_INVALID
++            continue
++        if not args.write:
++            emit(unified(old, new, display(host)))
++            emit(f"--- {display(side)}\n+++ /dev/null (sidecar removed)\n")
++            continue
++        D.atomic_write(host, new)
++        reread = D.as_carrier(host, carrier)
++        if reread.envelope is None or reread.issues:
++            D.atomic_write(host, old)
++            note(f"{display(host)}: write did not re-extract; host restored, sidecar kept")
++            status = EXIT_INVALID
++            continue
++        side.unlink()
++        moved += 1
++        ctx.record("inline", host, payload["id"], payload["revision"],
++                   f"sidecar -> {cname} carrier", resolve=("revision",))
++        note(f"{display(host)}: header moved inline ({cname}), revision {payload['revision']}")
++    if args.write:
++        note(f"moved {moved} sidecar header(s) inline")
++    return status
+diff --git a/src/somnus/commands/migrate.py b/src/somnus/commands/migrate.py
+index b5ba8de..161912e 100644
+--- a/src/somnus/commands/migrate.py
++++ b/src/somnus/commands/migrate.py
+@@ -2,7 +2,7 @@
+ # somnus:
+ #   schema: "somnus://metadata/core/2.0.0"
+ #   id: "urn:somnus:artifact:01a19a67-7e96-7062-bdf7-68595563304f"
+-#   revision: 1
++#   revision: 2
+ #   title: "somnus migrate: upgrade v0.1 hybrid documents to core 2.0.0 (SPEC §22)"
+ #   classification:
+ #     category: "engineering"
+@@ -17,7 +17,8 @@
+ #     scopes:
+ #       - target_ref: "urn:somnus:artifact:01a19a67-7e96-7062-bdf7-68595563304f"
+ #         aspects: ["content"]
+-#   time: {}
++#   time:
++#     updated_at: "2026-11-06T06:11:48+00:00"
+ #   names:
+ #     slug: "somnus-migrate-upgrade-v0-1-hybrid-documents-to-core-2-0-0-spec-22"
+ #   knowledge:
+@@ -404,6 +405,10 @@ def plan(path: Path, cfg: Config) -> Optional[tuple[str, str, dict]]:
+ 
+ def run(args, ctx: Ctx) -> int:
+     """Dry-run diff by default; ``--write`` writes after core validation."""
++    if getattr(args, "inline", False):
++        from somnus.commands import inline
++
++        return inline.run(args, ctx)
+     status = EXIT_OK
+     for raw in args.paths:
+         path = Path(raw).resolve()
+diff --git a/src/somnus/commands/stamp.py b/src/somnus/commands/stamp.py
+index 88182b5..e69e9f5 100644
+--- a/src/somnus/commands/stamp.py
++++ b/src/somnus/commands/stamp.py
+@@ -2,7 +2,7 @@
+ # somnus:
+ #   schema: "somnus://metadata/core/2.0.0"
+ #   id: "urn:somnus:artifact:01a19a67-7f3d-71cd-bef4-805c42c9501a"
+-#   revision: 1
++#   revision: 2
+ #   title: "somnus stamp: infer and inject a header into unmanaged files"
+ #   classification:
+ #     category: "engineering"
+@@ -17,7 +17,8 @@
+ #     scopes:
+ #       - target_ref: "urn:somnus:artifact:01a19a67-7f3d-71cd-bef4-805c42c9501a"
+ #         aspects: ["content"]
+-#   time: {}
++#   time:
++#     updated_at: "2026-11-06T06:11:48+00:00"
+ #   names:
+ #     slug: "somnus-stamp-infer-and-inject-a-header-into-unmanaged-files"
+ #   knowledge:
+@@ -38,15 +39,37 @@ from pathlib import Path
+ from typing import Optional
+ 
+ from somnus import document as D
++from somnus.carriers.jsonhost import JSON_KEY, object_members
+ from somnus.commands._common import Ctx, check_text, display, inferred_payload, note, unified
+ from somnus.output import EXIT_OK, SomnusError, emit
+ 
+ 
++def json_inline(host: Path, args, ctx: Ctx) -> bool:
++    """True when a plain ``.json`` host should carry ``"$somnus"`` instead of a sidecar.
++
++    Opt-in per call (``--inline``) or per configuration (``[carriers] json = "key"``);
++    only object documents qualify (arrays and scalars always use a sidecar).
++    """
++    if host.suffix.lower() != ".json":
++        return False
++    if not (getattr(args, "inline", False) or ctx.cfg.json_carrier == "key"):
++        return False
++    try:
++        object_members(host.read_text(encoding="utf-8-sig"), 0)
++    except (OSError, ValueError):
++        return False
++    return True
++
++
+ def _plan(path: Path, args, ctx: Ctx) -> Optional[tuple[Path, str, str, dict]]:
+     """Return (file to write, old text, new text, payload), or None when already managed."""
+     doc = D.load(path)
+     if doc.envelope is not None or doc.issues:
+         return None
++    if doc.is_sidecar and not doc.meta_path.exists() and json_inline(doc.path, args, ctx):
++        doc = D.as_carrier(doc.path, JSON_KEY)
++        if doc.envelope is not None or doc.issues:
++            return None
+     if doc.is_sidecar:
+         if doc.meta_path.exists():
+             return None
+diff --git a/src/somnus/commands/watch.py b/src/somnus/commands/watch.py
+new file mode 100644
+index 0000000..1dd9903
+--- /dev/null
++++ b/src/somnus/commands/watch.py
+@@ -0,0 +1,49 @@
++# somnus:metadata:v2
++# somnus:
++#   schema: "somnus://metadata/core/2.0.0"
++#   id: "urn:somnus:artifact:01a1af7c-0a26-7595-b8b5-ac403bdbdb4f"
++#   revision: 1
++#   title: "somnus watch: run the always-on watcher in the foreground (D20)"
++#   classification:
++#     category: "engineering"
++#     type: "source-code"
++#     role: "informative"
++#     scope: "component"
++#     tags: []
++#   lifecycle:
++#     status: "draft"
++#   authority:
++#     standing: "candidate"
++#     scopes:
++#       - target_ref: "urn:somnus:artifact:01a1af7c-0a26-7595-b8b5-ac403bdbdb4f"
++#         aspects: ["content"]
++#   time: {}
++#   names:
++#     slug: "somnus-watch-run-the-always-on-watcher-in-the-foreground-d20"
++#   knowledge:
++#     coverage: "artifact"
++#     subjects: ["urn:somnus:artifact:01a1af7c-0a26-7595-b8b5-ac403bdbdb4f"]
++#   access:
++#     visibility: "internal"
++#     allowed_uses: ["archive", "search", "reason"]
++#   ingestion:
++#     disposition: "candidate"
++#     body_role: "source"
++# somnus:end
++"""``somnus watch``: run the always-on watcher in the foreground (D20)."""
++
++from __future__ import annotations
++
++from pathlib import Path
++
++from somnus.commands._common import Ctx, note
++from somnus.watch import Settings, Watcher
++
++
++def run(args, ctx: Ctx) -> int:
++    """Poll the registered roots (or the named ones) until stopped; ``--once`` makes one pass."""
++    settings = Settings.from_config(ctx.cfg, interval=args.interval, settle=args.settle, stamp=args.stamp,
++                                    adopt=True if args.adopt else None, revise=args.revise)
++    watcher = Watcher(ctx.cfg.home, settings, roots=[Path(r).resolve() for r in args.roots],
++                      log=note if not args.quiet else (lambda message: None))
++    return watcher.run(once=args.once)
+diff --git a/src/somnus/config.py b/src/somnus/config.py
+index 00bd147..4966f9f 100644
+--- a/src/somnus/config.py
++++ b/src/somnus/config.py
+@@ -2,7 +2,7 @@
+ # somnus:
+ #   schema: "somnus://metadata/core/2.0.0"
+ #   id: "urn:somnus:artifact:01a19a67-7f68-7721-b807-1f454021e4af"
+-#   revision: 1
++#   revision: 2
+ #   title: "Hierarchical configuration: CLI flag > nearest .somnus.toml > $SOMNUSHOME/config.toml > defaults"
+ #   classification:
+ #     category: "engineering"
+@@ -17,7 +17,8 @@
+ #     scopes:
+ #       - target_ref: "urn:somnus:artifact:01a19a67-7f68-7721-b807-1f454021e4af"
+ #         aspects: ["content"]
+-#   time: {}
++#   time:
++#     updated_at: "2026-11-06T06:11:48+00:00"
+ #   names:
+ #     slug: "hierarchical-configuration-cli-flag-nearest-somnus-toml-somnushome-config-toml-d"
+ #   knowledge:
+@@ -59,10 +60,19 @@ BUILTIN: dict[str, Any] = {
+     },
+     "index": {
+         "roots": ["."],
+-        "exclude": ["archive/**", ".git/**", "node_modules/**", "**/__pycache__/**"],
++        "exclude": ["archive/**", ".git/**", "node_modules/**", "**/__pycache__/**", "**/node_modules/**",
++                    "**/.venv/**", "**/venv/**", "**/site-packages/**", "**/.tox/**", "**/.mypy_cache/**",
++                    "build/**", "dist/**", "**/*.egg-info/**"],
+     },
++    "carriers": {"json": "sidecar"},
++    "watch": {"interval": 5.0, "settle": 10.0, "stamp": "inline", "rescan": 300.0, "adopt": False,
++              "revise": "auto"},
+ }
+ 
++JSON_CARRIERS = ("sidecar", "key")
++WATCH_STAMP = ("off", "inline", "all")
++WATCH_REVISE = ("off", "auto")
++
+ CONFIG_TEMPLATE = '''# Somnus global configuration (precedence: CLI flag > .somnus.toml > this file > built-ins)
+ actor = "operator"
+ 
+@@ -78,7 +88,25 @@ body_role = "specification"
+ 
+ [index]
+ roots = []
+-exclude = ["archive/**", ".git/**", "node_modules/**", "**/__pycache__/**"]
++exclude = ["archive/**", ".git/**", "node_modules/**", "**/__pycache__/**", "**/node_modules/**",
++           "**/.venv/**", "**/venv/**", "**/site-packages/**", "**/.tox/**", "**/.mypy_cache/**",
++           "build/**", "dist/**", "**/*.egg-info/**"]
++
++[carriers]
++# Plain .json has no comments: "sidecar" writes <file>.somnus.yaml, "key" embeds a leading "$somnus" member.
++json = "sidecar"
++
++[watch]
++# somnus watch: poll interval and settle time (seconds), and what to do with unmanaged files:
++# "off" index only, "inline" stamp files with an embedded carrier, "all" also create sidecars.
++interval = 5.0
++settle = 10.0
++stamp = "inline"
++rescan = 300.0
++# adopt = true also stamps files that were unmanaged before the watcher started.
++adopt = false
++# revise = "auto" records an in-place edit (same revision, changed content) as a new revision.
++revise = "auto"
+ '''
+ 
+ _ENUMS = {
+@@ -106,6 +134,8 @@ class Config:
+     exclude: list[str]
+     home: Path
+     sources: list[Path] = field(default_factory=list)
++    json_carrier: str = "sidecar"
++    watch: dict[str, Any] = field(default_factory=lambda: dict(BUILTIN["watch"]))
+ 
+     @property
+     def db_path(self) -> Path:
+@@ -144,7 +174,7 @@ def _read(path: Path) -> dict[str, Any]:
+ 
+ 
+ def _check(data: dict[str, Any], path: Path) -> None:
+-    unknown = set(data) - {"actor", "defaults", "index"}
++    unknown = set(data) - {"actor", "defaults", "index", "carriers", "watch"}
+     if unknown:
+         raise ConfigError(f"{path}: unknown keys {sorted(unknown)}")
+     if "actor" in data and (not isinstance(data["actor"], str) or not data["actor"].strip()):
+@@ -161,6 +191,32 @@ def _check(data: dict[str, Any], path: Path) -> None:
+                 raise ConfigError(f"{path}: defaults.{key} = {value!r} is not one of {_ENUMS[key]}")
+         else:
+             raise ConfigError(f"{path}: unknown key defaults.{key}")
++    carriers_t = data.get("carriers", {})
++    if not isinstance(carriers_t, dict):
++        raise ConfigError(f"{path}: [carriers] must be a table")
++    for key, value in carriers_t.items():
++        if key != "json":
++            raise ConfigError(f"{path}: unknown key carriers.{key}")
++        if value not in JSON_CARRIERS:
++            raise ConfigError(f"{path}: carriers.json = {value!r} is not one of {JSON_CARRIERS}")
++    watch = data.get("watch", {})
++    if not isinstance(watch, dict):
++        raise ConfigError(f"{path}: [watch] must be a table")
++    for key, value in watch.items():
++        if key == "stamp":
++            if value not in WATCH_STAMP:
++                raise ConfigError(f"{path}: watch.stamp = {value!r} is not one of {WATCH_STAMP}")
++        elif key == "revise":
++            if value not in WATCH_REVISE:
++                raise ConfigError(f"{path}: watch.revise = {value!r} is not one of {WATCH_REVISE}")
++        elif key == "adopt":
++            if not isinstance(value, bool):
++                raise ConfigError(f"{path}: watch.adopt must be true or false")
++        elif key in ("interval", "settle", "rescan"):
++            if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
++                raise ConfigError(f"{path}: watch.{key} must be a non-negative number")
++        else:
++            raise ConfigError(f"{path}: unknown key watch.{key}")
+     index = data.get("index", {})
+     if not isinstance(index, dict):
+         raise ConfigError(f"{path}: [index] must be a table")
+@@ -191,6 +247,8 @@ def load(start: Optional[Path] = None, actor: Optional[str] = None) -> Config:
+         if "actor" in data:
+             merged["actor"] = data["actor"]
+         merged["defaults"].update(data.get("defaults", {}))
++        merged["carriers"].update(data.get("carriers", {}))
++        merged["watch"].update(data.get("watch", {}))
+         index = data.get("index", {})
+         if "exclude" in index:
+             merged["index"]["exclude"] = list(index["exclude"])
+@@ -205,4 +263,6 @@ def load(start: Optional[Path] = None, actor: Optional[str] = None) -> Config:
+         exclude=list(merged["index"]["exclude"]),
+         home=home,
+         sources=sources,
++        json_carrier=merged["carriers"]["json"],
++        watch=dict(merged["watch"]),
+     )
+diff --git a/src/somnus/document.py b/src/somnus/document.py
+index a79aed8..66eb29c 100644
+--- a/src/somnus/document.py
++++ b/src/somnus/document.py
+@@ -2,7 +2,7 @@
+ # somnus:
+ #   schema: "somnus://metadata/core/2.0.0"
+ #   id: "urn:somnus:artifact:01a19a67-7fdb-77c7-9121-0c1d07c25199"
+-#   revision: 1
++#   revision: 2
+ #   title: "Document loading and atomic saving with byte preservation (SPEC §16.3, §17)"
+ #   classification:
+ #     category: "engineering"
+@@ -17,7 +17,8 @@
+ #     scopes:
+ #       - target_ref: "urn:somnus:artifact:01a19a67-7fdb-77c7-9121-0c1d07c25199"
+ #         aspects: ["content"]
+-#   time: {}
++#   time:
++#     updated_at: "2026-11-06T06:11:48+00:00"
+ #   names:
+ #     slug: "document-loading-and-atomic-saving-with-byte-preservation-spec-16-3-17"
+ #   knowledge:
+@@ -119,10 +120,17 @@ class Document:
+             return (-1, -1)
+         return (self.envelope.mask_start, self.envelope.mask_end)
+ 
++    @property
++    def is_tree(self) -> bool:
++        """True when the carrier stores the payload inside the host's JSON data tree."""
++        return hasattr(self.carrier, "host_view")
++
+     def body_lines(self) -> list[str]:
+         """Lines outside the envelope (host content)."""
+         if self.is_sidecar:
+             return []
++        if self.is_tree:
++            return list(self.carrier.host_view(self.lines))
+         if self.envelope is None:
+             return list(self.lines)
+         return self.lines[: self.envelope.start] + self.lines[self.envelope.end :]
+@@ -132,6 +140,8 @@ class Document:
+         if self.is_sidecar:
+             data = self.host_bytes if self.host_bytes is not None else b""
+             return hashlib.sha256(data.replace(b"\r\n", b"\n")).hexdigest()
++        if self.is_tree:
++            return hashlib.sha256(("\n".join(self.body_lines()) + "\n").encode("utf-8")).hexdigest()
+         keep: list[int] = list(range(len(self.lines)))
+         if self.envelope is not None:
+             keep = [i for i in keep if not self.envelope.start <= i < self.envelope.end]
+@@ -193,7 +203,13 @@ class Document:
+         extraction = self.carrier.extract(new_lines)
+         env = extraction.envelope
+         ok = env is not None and not extraction.issues
+-        if ok:
++        if ok and self.is_tree:
++            try:
++                ok = (self.carrier.tree_without_key("\n".join(new_lines))
++                      == self.carrier.tree_without_key("\n".join(self.lines)))
++            except ValueError:
++                ok = False
++        elif ok:
+             new_body = new_lines[: env.start] + new_lines[env.end :]
+             ok = new_body == self.body_lines()
+         if not ok:
+@@ -347,7 +363,7 @@ def _load_sidecar(host: Path, sidecar: Path, lenient: bool) -> Document:
+ def from_text(path: Path | str, text: str, *, lenient: bool = False) -> Document:
+     """Build a document from in-memory text (used by tests and dry runs)."""
+     path = Path(path)
+-    carrier = carriers.for_path(path) or SIDECAR
++    carrier = carriers.for_text(path, text) or SIDECAR
+     if text.startswith("\ufeff"):
+         text, bom = text[1:], True
+     else:
+@@ -361,6 +377,19 @@ def from_text(path: Path | str, text: str, *, lenient: bool = False) -> Document
+     return doc
+ 
+ 
++def as_carrier(path: Path | str, carrier: Any) -> Document:
++    """Load a host under an explicitly chosen embedded carrier (e.g. opting a JSON file into ``$somnus``)."""
++    path = Path(path).resolve()
++    text, bom = _decode(_read(path), path)
++    lines, endings = _split(text)
++    doc = Document(path, path, carrier, lines, endings, bom)
++    extraction = carrier.extract(lines)
++    doc.envelope = extraction.envelope
++    doc.issues.extend(_issue_diag(path, i) for i in extraction.issues)
++    _parse_into(doc, False)
++    return doc
++
++
+ def new_sidecar_text(payload: dict) -> str:
+     """Canonical text for a brand-new sidecar file."""
+     return canonical_yaml({"somnus": payload})
+diff --git a/src/somnus/infer.py b/src/somnus/infer.py
+index e6e6731..89f59e8 100644
+--- a/src/somnus/infer.py
++++ b/src/somnus/infer.py
+@@ -2,7 +2,7 @@
+ # somnus:
+ #   schema: "somnus://metadata/core/2.0.0"
+ #   id: "urn:somnus:artifact:01a19a67-8008-7589-8040-372fd8ff4a8f"
+-#   revision: 1
++#   revision: 2
+ #   title: "Heuristic title and classification inference for somnus stamp"
+ #   classification:
+ #     category: "engineering"
+@@ -17,7 +17,8 @@
+ #     scopes:
+ #       - target_ref: "urn:somnus:artifact:01a19a67-8008-7589-8040-372fd8ff4a8f"
+ #         aspects: ["content"]
+-#   time: {}
++#   time:
++#     updated_at: "2026-11-06T06:11:49+00:00"
+ #   names:
+ #     slug: "heuristic-title-and-classification-inference-for-somnus-stamp"
+ #   knowledge:
+@@ -84,7 +85,22 @@ _TYPE_DEFAULTS: dict[str, tuple[str, str, str]] = {
+ _SOURCE = {".py", ".pyw", ".sh", ".bash", ".zsh", ".ps1", ".psm1", ".r", ".js", ".mjs", ".cjs", ".jsx", ".ts",
+            ".tsx", ".rs", ".c", ".h", ".cc", ".cpp", ".hpp", ".go", ".java", ".kt", ".swift", ".cs", ".sql",
+            ".css", ".scss", ".less", ".html", ".htm"}
+-_CONFIG = {".toml", ".yaml", ".yml", ".ini", ".cfg", ".psd1", ".xml"}
++_SOURCE |= {".rb", ".rake", ".gemspec", ".pl", ".pm", ".jl", ".ex", ".exs", ".cr", ".nim", ".tcl", ".awk",
++            ".sed", ".fish", ".lua", ".hs", ".elm", ".ada", ".adb", ".ads", ".zig", ".dart", ".scala",
++            ".proto", ".groovy", ".gradle", ".mm", ".sol", ".hx", ".glsl", ".hlsl", ".wgsl", ".cu", ".cuh",
++            ".vue", ".svelte", ".astro", ".mts", ".cts", ".pyi", ".pyx", ".mojo", ".tf", ".hcl", ".nix",
++            ".graphql", ".gql", ".mk", ".cmake", ".xsl", ".xslt", ".dockerfile", ".containerfile"}
++_CONFIG = {".toml", ".yaml", ".yml", ".ini", ".cfg", ".psd1", ".xml", ".conf", ".properties", ".env",
++           ".editorconfig", ".tfvars", ".jsonc", ".json5", ".plist", ".csproj", ".vcxproj", ".resx", ".xsd",
++           ".gitignore", ".gitattributes", ".dockerignore", ".npmignore"}
++_CONFIG_NAMES = {"CODEOWNERS", "MANIFEST.in", "Makefile", "makefile", "GNUmakefile", "CMakeLists.txt", "Dockerfile",
++                 "Containerfile", "Gemfile", "Rakefile", "Vagrantfile", "Brewfile", "Podfile", "Justfile",
++                 "justfile", "Pipfile", "Caddyfile", "Tiltfile", "BUILD", "BUILD.bazel", "WORKSPACE",
++                 "tsconfig.json", "jsconfig.json", "devcontainer.json", ".devcontainer.json", ".eslintrc.json",
++                 ".babelrc", "tslint.json", "package.json", "pyproject.toml", "Cargo.toml", "go.mod"}
++_CONFIG_PREFIXES = ("requirements", "constraints", ".env", "Dockerfile.", "Containerfile.", "tsconfig.",
++                    "jsconfig.", ".git", ".npm", ".yarn", ".prettier", ".eslint", ".flake8", ".pylintrc",
++                    ".coveragerc", ".editorconfig", ".clang-")
+ _DATA = {".json", ".csv", ".tsv", ".parquet", ".jsonl", ".ndjson", ".sqlite", ".db"}
+ _ASSET = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".pdf", ".docx", ".pptx", ".xlsx", ".zip", ".ico", ".webp"}
+ 
+@@ -104,6 +120,8 @@ def infer_type(path: Path, lines: Sequence[str]) -> str:
+     """Infer the artifact type from extension, filename keywords, and content."""
+     suffix = path.suffix.lower()
+     stem = path.stem.lower()
++    if path.name in _CONFIG_NAMES or path.name.startswith(_CONFIG_PREFIXES):
++        return "configuration"
+     if suffix in (".md", ".markdown", ".mdx", ".txt", ".rst"):
+         for pattern, kind in _MD_KEYWORDS:
+             if re.search(pattern, stem):
+@@ -123,6 +141,8 @@ def infer_type(path: Path, lines: Sequence[str]) -> str:
+         return "asset"
+     if suffix == ".ipynb":
+         return "report"
++    if lines and lines[0].startswith("#!"):
++        return "source-code"
+     return "asset"
+ 
+ 
+diff --git a/src/somnus/mcp.py b/src/somnus/mcp.py
+index 3156c25..ea7c35a 100644
+--- a/src/somnus/mcp.py
++++ b/src/somnus/mcp.py
+@@ -2,7 +2,7 @@
+ # somnus:
+ #   schema: "somnus://metadata/core/2.0.0"
+ #   id: "urn:somnus:artifact:01a19a67-8023-7769-994d-434e7633f970"
+-#   revision: 1
++#   revision: 2
+ #   title: "Model Context Protocol server: every non-interactive somnus command as a stdio tool (D17)"
+ #   classification:
+ #     category: "engineering"
+@@ -17,7 +17,8 @@
+ #     scopes:
+ #       - target_ref: "urn:somnus:artifact:01a19a67-8023-7769-994d-434e7633f970"
+ #         aspects: ["content"]
+-#   time: {}
++#   time:
++#     updated_at: "2026-11-06T06:11:49+00:00"
+ #   names:
+ #     slug: "model-context-protocol-server-every-non-interactive-somnus-command-as-a-stdio-to"
+ #   knowledge:
+@@ -53,7 +54,7 @@ from somnus.commands.brief import BRIEF
+ from somnus.output import EXIT_OK, EXIT_USAGE
+ 
+ PROTOCOL_VERSIONS = ("2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05")
+-EXCLUDED = frozenset({"edit", "mcp"})
++EXCLUDED = frozenset({"edit", "mcp", "watch"})
+ READ_ONLY = frozenset({"brief", "check", "ls", "q", "stale"})
+ SERVER_ONLY = frozenset({"actor", "no_color", "debug", "help"})
+ PATH_PARAMS = frozenset({"path", "paths", "roots", "root", "dir", "out"})
+diff --git a/src/somnus/model/validate.py b/src/somnus/model/validate.py
+index 3533256..f36e15f 100644
+--- a/src/somnus/model/validate.py
++++ b/src/somnus/model/validate.py
+@@ -2,7 +2,7 @@
+ # somnus:
+ #   schema: "somnus://metadata/core/2.0.0"
+ #   id: "urn:somnus:artifact:01a19a67-80d7-7591-90c7-6436e6c5e580"
+-#   revision: 1
++#   revision: 2
+ #   title: "Multi-stage validation pipeline: carrier, core, semantic, canon (SPEC §19)"
+ #   classification:
+ #     category: "engineering"
+@@ -17,7 +17,8 @@
+ #     scopes:
+ #       - target_ref: "urn:somnus:artifact:01a19a67-80d7-7591-90c7-6436e6c5e580"
+ #         aspects: ["content"]
+-#   time: {}
++#   time:
++#     updated_at: "2026-11-06T06:11:49+00:00"
+ #   names:
+ #     slug: "multi-stage-validation-pipeline-carrier-core-semantic-canon-spec-19"
+ #   knowledge:
+@@ -701,9 +702,14 @@ def selectors(run: _Run, somnus: dict) -> None:
+             if count != 1:
+                 run.err(sp, "E_REGION", f"expected exactly one definition of {name!r}, found {count}")
+         elif kind == "json-pointer":
+-            target = primary_target(somnus, doc.meta_path) if doc.is_sidecar else None
++            if doc.is_sidecar:
++                target = primary_target(somnus, doc.meta_path)
++            elif doc.carrier.name in ("json", "ipynb"):
++                target = doc.path
++            else:
++                target = None
+             if target is None or not target.is_file():
+-                run.err(sp, "E_REGION", "json-pointer selectors need a sidecar with a resolvable primary target")
++                run.err(sp, "E_REGION", "json-pointer selectors need a JSON host (sidecar primary target or $somnus carrier)")
+                 continue
+             try:
+                 tree = json.loads(target.read_text(encoding="utf-8"))
+diff --git a/src/somnus/model/vocab.py b/src/somnus/model/vocab.py
+index 13fcb03..02193da 100644
+--- a/src/somnus/model/vocab.py
++++ b/src/somnus/model/vocab.py
+@@ -2,7 +2,7 @@
+ # somnus:
+ #   schema: "somnus://metadata/core/2.0.0"
+ #   id: "urn:somnus:artifact:01a19a67-80f6-7026-96bc-804acec241bf"
+-#   revision: 1
++#   revision: 2
+ #   title: "Controlled vocabularies of core schema 2.0.0 (SPEC §5, §7–§15)"
+ #   classification:
+ #     category: "engineering"
+@@ -17,7 +17,8 @@
+ #     scopes:
+ #       - target_ref: "urn:somnus:artifact:01a19a67-80f6-7026-96bc-804acec241bf"
+ #         aspects: ["content"]
+-#   time: {}
++#   time:
++#     updated_at: "2026-11-06T06:11:50+00:00"
+ #   names:
+ #     slug: "controlled-vocabularies-of-core-schema-2-0-0-spec-5-7-15"
+ #   knowledge:
+@@ -62,6 +63,7 @@ CAPABILITIES = (
+     "somnus-adapter-markdown@1", "somnus-adapter-html-comment@1", "somnus-adapter-hash-comment@1",
+     "somnus-adapter-tex@1", "somnus-adapter-slash-comment@1", "somnus-adapter-sql-comment@1",
+     "somnus-adapter-block-comment@1", "somnus-adapter-sidecar@1",
++    "somnus-adapter-json-key@1", "somnus-adapter-notebook@1",
+ )
+ 
+ VALID_TIME_BASES = ("bounded", "open", "timeless", "unknown")
+diff --git a/src/somnus/service.py b/src/somnus/service.py
+new file mode 100644
+index 0000000..bff2787
+--- /dev/null
++++ b/src/somnus/service.py
+@@ -0,0 +1,193 @@
++# somnus:metadata:v2
++# somnus:
++#   schema: "somnus://metadata/core/2.0.0"
++#   id: "urn:somnus:artifact:01a1af7c-0a38-7225-b7d7-bbcff55ed73f"
++#   revision: 1
++#   title: "Install the watcher under the user's service manager so it runs 24/7 (D20)"
++#   classification:
++#     category: "engineering"
++#     type: "source-code"
++#     role: "informative"
++#     scope: "component"
++#     tags: []
++#   lifecycle:
++#     status: "draft"
++#   authority:
++#     standing: "candidate"
++#     scopes:
++#       - target_ref: "urn:somnus:artifact:01a1af7c-0a38-7225-b7d7-bbcff55ed73f"
++#         aspects: ["content"]
++#   time: {}
++#   names:
++#     slug: "install-the-watcher-under-the-user-s-service-manager-so-it-runs-24-7-d20"
++#   knowledge:
++#     coverage: "artifact"
++#     subjects: ["urn:somnus:artifact:01a1af7c-0a38-7225-b7d7-bbcff55ed73f"]
++#   access:
++#     visibility: "internal"
++#     allowed_uses: ["archive", "search", "reason"]
++#   ingestion:
++#     disposition: "candidate"
++#     body_role: "source"
++# somnus:end
++"""Install the watcher under the user's service manager so it runs 24/7 (D20).
++
++* Linux: a systemd **user** unit (``~/.config/systemd/user/somnus-watch.service``).
++  ``loginctl enable-linger $USER`` keeps it running without an open session.
++* macOS: a launchd agent (``~/Library/LaunchAgents/dev.somnus.watch.plist``).
++* Windows: a logon scheduled task (``SomnusWatch``) running ``pythonw -m somnus watch``.
++
++Every unit runs the same interpreter that ran the install, so a global
++``~/.venvs/global`` install keeps using its own environment.
++"""
++
++from __future__ import annotations
++
++import os
++import shutil
++import subprocess
++import sys
++from dataclasses import dataclass
++from pathlib import Path
++from typing import Callable, Optional, Sequence
++from xml.sax.saxutils import escape
++
++UNIT_NAME = "somnus-watch.service"
++LAUNCHD_LABEL = "dev.somnus.watch"
++TASK_NAME = "SomnusWatch"
++
++Runner = Callable[[Sequence[str]], tuple[int, str]]
++
++
++def _run(argv: Sequence[str]) -> tuple[int, str]:
++    try:
++        proc = subprocess.run(list(argv), capture_output=True, text=True, timeout=60, check=False)
++    except (OSError, subprocess.TimeoutExpired) as exc:
++        return 127, str(exc)
++    return proc.returncode, (proc.stdout + proc.stderr).strip()
++
++
++@dataclass
++class Plan:
++    """What an install writes and runs."""
++
++    platform: str
++    path: Optional[Path]
++    content: str
++    commands: list[list[str]]
++    hint: str = ""
++
++
++def _quote(value: str) -> str:
++    return f'"{value}"' if any(c in value for c in " \t\"\\") else value
++
++
++def platform_name() -> str:
++    """``linux``, ``darwin``, or ``windows``."""
++    if os.name == "nt":
++        return "windows"
++    return "darwin" if sys.platform == "darwin" else "linux"
++
++
++def python_for_service() -> str:
++    """Interpreter for the service; on Windows prefer the windowless ``pythonw``."""
++    exe = sys.executable or shutil.which("python3") or "python3"
++    if os.name == "nt":
++        candidate = Path(exe).with_name("pythonw.exe")
++        if candidate.exists():
++            return str(candidate)
++    return exe
++
++
++def install_plan(home: Path, platform: Optional[str] = None) -> Plan:
++    """The unit file and commands for this platform."""
++    platform = platform or platform_name()
++    py = python_for_service()
++    if platform == "linux":
++        path = Path.home() / ".config" / "systemd" / "user" / UNIT_NAME
++        content = (
++            "[Unit]\n"
++            "Description=Somnus metadata watcher (stamps and indexes registered roots)\n"
++            "After=default.target\n\n"
++            "[Service]\n"
++            "Type=simple\n"
++            f"ExecStart={_quote(py)} -m somnus watch\n"
++            f"Environment=SOMNUS_HOME={home}\n"
++            "Environment=PYTHONUNBUFFERED=1\n"
++            "Restart=on-failure\n"
++            "RestartSec=5\n"
++            "Nice=10\n"
++            "IOSchedulingClass=idle\n\n"
++            "[Install]\n"
++            "WantedBy=default.target\n"
++        )
++        cmds = [["systemctl", "--user", "daemon-reload"],
++                ["systemctl", "--user", "enable", "--now", UNIT_NAME]]
++        user = os.environ.get("USER", "$USER")
++        return Plan(platform, path, content, cmds,
++                    f"to keep it running while you are logged out: loginctl enable-linger {user}")
++    if platform == "darwin":
++        path = Path.home() / "Library" / "LaunchAgents" / f"{LAUNCHD_LABEL}.plist"
++        log = home / "watch.log"
++        content = (
++            '<?xml version="1.0" encoding="UTF-8"?>\n'
++            '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" '
++            '"http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n'
++            '<plist version="1.0">\n<dict>\n'
++            f"  <key>Label</key><string>{LAUNCHD_LABEL}</string>\n"
++            "  <key>ProgramArguments</key>\n  <array>\n"
++            f"    <string>{escape(py)}</string><string>-m</string><string>somnus</string><string>watch</string>\n"
++            "  </array>\n"
++            "  <key>EnvironmentVariables</key>\n  <dict>\n"
++            f"    <key>SOMNUS_HOME</key><string>{escape(str(home))}</string>\n"
++            "  </dict>\n"
++            "  <key>RunAtLoad</key><true/>\n"
++            "  <key>KeepAlive</key><true/>\n"
++            "  <key>ProcessType</key><string>Background</string>\n"
++            f"  <key>StandardOutPath</key><string>{escape(str(log))}</string>\n"
++            f"  <key>StandardErrorPath</key><string>{escape(str(log))}</string>\n"
++            "</dict>\n</plist>\n"
++        )
++        uid = str(os.getuid()) if hasattr(os, "getuid") else "501"
++        cmds = [["launchctl", "bootout", f"gui/{uid}/{LAUNCHD_LABEL}"],
++                ["launchctl", "bootstrap", f"gui/{uid}", str(path)]]
++        return Plan(platform, path, content, cmds)
++    task = f'"{py}" -m somnus watch'
++    cmds = [["schtasks", "/Create", "/F", "/SC", "ONLOGON", "/RL", "LIMITED", "/TN", TASK_NAME, "/TR", task],
++            ["schtasks", "/Run", "/TN", TASK_NAME]]
++    return Plan("windows", None, "", cmds, f"SOMNUS_HOME is read from the user environment ({home})")
++
++
++def uninstall_plan(platform: Optional[str] = None) -> Plan:
++    """Commands and the file an uninstall removes."""
++    platform = platform or platform_name()
++    if platform == "linux":
++        return Plan(platform, Path.home() / ".config" / "systemd" / "user" / UNIT_NAME, "",
++                    [["systemctl", "--user", "disable", "--now", UNIT_NAME], ["systemctl", "--user", "daemon-reload"]])
++    if platform == "darwin":
++        uid = str(os.getuid()) if hasattr(os, "getuid") else "501"
++        return Plan(platform, Path.home() / "Library" / "LaunchAgents" / f"{LAUNCHD_LABEL}.plist", "",
++                    [["launchctl", "bootout", f"gui/{uid}/{LAUNCHD_LABEL}"]])
++    return Plan("windows", None, "", [["schtasks", "/End", "/TN", TASK_NAME],
++                                      ["schtasks", "/Delete", "/F", "/TN", TASK_NAME]])
++
++
++def apply(plan: Plan, runner: Runner = _run, install: bool = True) -> list[str]:
++    """Write/remove the unit and run its commands; returns human-readable result lines."""
++    out: list[str] = []
++    if install and plan.path is not None:
++        plan.path.parent.mkdir(parents=True, exist_ok=True)
++        plan.path.write_text(plan.content, encoding="utf-8")
++        out.append(f"wrote {plan.path}")
++    for i, argv in enumerate(plan.commands):
++        code, text = runner(argv)
++        # launchctl bootout before bootstrap fails harmlessly when nothing is loaded.
++        tolerated = plan.platform == "darwin" and install and i == 0
++        status = "ok" if code == 0 or tolerated else f"exit {code}"
++        out.append(f"$ {' '.join(argv)}: {status}" + (f" ({text})" if text and code and not tolerated else ""))
++    if not install and plan.path is not None and plan.path.exists():
++        plan.path.unlink()
++        out.append(f"removed {plan.path}")
++    if install and plan.hint:
++        out.append(plan.hint)
++    return out
+diff --git a/src/somnus/tui/app.py b/src/somnus/tui/app.py
+index a1a3e6e..adf6205 100644
+--- a/src/somnus/tui/app.py
++++ b/src/somnus/tui/app.py
+@@ -2,7 +2,7 @@
+ # somnus:
+ #   schema: "somnus://metadata/core/2.0.0"
+ #   id: "urn:somnus:artifact:01a19a67-8156-75ee-b790-6ee44e372f93"
+-#   revision: 1
++#   revision: 2
+ #   title: "Full-screen document browser and header editor behind somnus edit"
+ #   classification:
+ #     category: "engineering"
+@@ -17,7 +17,8 @@
+ #     scopes:
+ #       - target_ref: "urn:somnus:artifact:01a19a67-8156-75ee-b790-6ee44e372f93"
+ #         aspects: ["content"]
+-#   time: {}
++#   time:
++#     updated_at: "2026-11-06T06:11:50+00:00"
+ #   names:
+ #     slug: "full-screen-document-browser-and-header-editor-behind-somnus-edit"
+ #   knowledge:
+@@ -418,13 +419,29 @@ class BrowserScreen:
+         left_w, right_w = split_widths(width, BROWSER_RATIO)
+         left = self.list.render(left_w, body_h)
+         right = detail_lines(self.list.selected, right_w)[:body_h]
+-        lines = [highlight(f"somnus edit: {len(self.list.items)} documents in registry", width)]
++        lines = [highlight(f"somnus edit: {len(self.list.items)} documents in registry{watch_label(self.ctx)}", width)]
+         lines.extend(split(left, right, width, BROWSER_RATIO))
+         lines.append(self.message)
+         lines.append("[/] filter  [enter] edit header  [r] reload  [q] quit")
+         return [fit(line, width) for line in lines[:height]]
+ 
+ 
++def watch_label(ctx: Any) -> str:
++    """Header suffix with the 24/7 watcher state (empty when unknown)."""
++    try:
++        from somnus.watch import read_status
++
++        data = read_status(ctx.cfg.home)
++    except Exception:  # noqa: BLE001 - the label is decoration; never break the frame
++        return ""
++    if not data:
++        return "  |  watcher: not installed"
++    if not data.get("running"):
++        return "  |  watcher: stopped"
++    c = data.get("counters", {})
++    return f"  |  watcher: live ({c.get('stamped', 0)} stamped, {c.get('revised', 0)} revised)"
++
++
+ def main(ctx: Ctx, path: Optional[Path]) -> int:
+     """Run the browser (``path`` is None) or the editor for ``path``; return the exit code."""
+     notes = NoteBuffer()
+diff --git a/src/somnus/watch.py b/src/somnus/watch.py
+new file mode 100644
+index 0000000..9e6b334
+--- /dev/null
++++ b/src/somnus/watch.py
+@@ -0,0 +1,489 @@
++# somnus:metadata:v2
++# somnus:
++#   schema: "somnus://metadata/core/2.0.0"
++#   id: "urn:somnus:artifact:01a1af7c-0a61-70f2-8ce7-61d2c079acd6"
++#   revision: 1
++#   title: "The always-on watcher: poll registered roots, stamp new files, keep the registry current (D20)"
++#   classification:
++#     category: "engineering"
++#     type: "source-code"
++#     role: "informative"
++#     scope: "component"
++#     tags: []
++#   lifecycle:
++#     status: "draft"
++#   authority:
++#     standing: "candidate"
++#     scopes:
++#       - target_ref: "urn:somnus:artifact:01a1af7c-0a61-70f2-8ce7-61d2c079acd6"
++#         aspects: ["content"]
++#   time: {}
++#   names:
++#     slug: "the-always-on-watcher-poll-registered-roots-stamp-new-files-keep-the-registry-cu"
++#   knowledge:
++#     coverage: "artifact"
++#     subjects: ["urn:somnus:artifact:01a1af7c-0a61-70f2-8ce7-61d2c079acd6"]
++#   access:
++#     visibility: "internal"
++#     allowed_uses: ["archive", "search", "reason"]
++#   ingestion:
++#     disposition: "candidate"
++#     body_role: "source"
++# somnus:end
++"""The always-on watcher: poll registered roots, stamp new files, keep the registry current (D20).
++
++The watcher is the system's 24/7 loop. It is not the MCP server: MCP serves the
++CLI to agents on demand, while the watcher runs continuously under the user's
++service manager (systemd user unit, launchd agent, or a Windows logon task).
++
++Design (stdlib only, every platform):
++
++* **Polling with a stat snapshot.** Each tick walks the registered roots, honoring
++  the configured excludes, and compares ``(mtime_ns, size)`` per file. Only files
++  that changed are opened. Roots registered later with ``somnus init --root`` are
++  picked up on the next tick.
++* **Settle before stamping.** A new unmanaged file is stamped only after it has
++  not changed for ``settle`` seconds, so editors and generators finish writing.
++* **Stamp policy.** ``off`` indexes only; ``inline`` stamps files that have an
++  embedded carrier (never creates sidecars); ``all`` also creates sidecars.
++  Existing unmanaged files are adopted on start only with ``adopt``.
++* **Single instance.** An OS file lock in ``$SOMNUS_HOME/watch.lock`` prevents two
++  watchers; ``$SOMNUS_HOME/watch.json`` is the heartbeat read by
++  ``somnus daemon status``, the TUI, and MCP.
++* **Reconciliation.** Changed managed files go through ``Store.observe``; a
++  deletion or every ``rescan`` seconds triggers an incremental ``Store.scan`` so
++  missing locations and cross-file conflicts stay correct.
++"""
++
++from __future__ import annotations
++
++import json
++import os
++import signal
++import sys
++import time
++import types
++from dataclasses import asdict, dataclass, field
++from pathlib import Path
++from typing import Callable, Optional, TextIO
++
++from somnus import __version__, carriers
++from somnus import config as C
++from somnus import document as D
++from somnus.db.store import Store, glob_regex, matches_any, now_iso
++from somnus.output import SomnusError
++
++STATUS_NAME = "watch.json"
++LOCK_NAME = "watch.lock"
++WATCH_ACTOR = "somnus-watch"
++_PRUNE = {".git", ".hg", ".svn"}
++
++
++@dataclass
++class Counters:
++    """Running totals reported in the heartbeat."""
++
++    ticks: int = 0
++    indexed: int = 0
++    stamped: int = 0
++    revised: int = 0
++    skipped: int = 0
++    errors: int = 0
++    scans: int = 0
++
++
++@dataclass
++class Settings:
++    """Watcher settings resolved from config and flags."""
++
++    interval: float = 5.0
++    settle: float = 10.0
++    stamp: str = "inline"
++    rescan: float = 300.0
++    adopt: bool = False
++    revise: str = "auto"
++
++    @classmethod
++    def from_config(cls, cfg: C.Config, **overrides) -> "Settings":
++        """Config ``[watch]`` values with non-None overrides applied."""
++        w = cfg.watch
++        s = cls(float(w.get("interval", 5.0)), float(w.get("settle", 10.0)), str(w.get("stamp", "inline")),
++                float(w.get("rescan", 300.0)), bool(w.get("adopt", False)), str(w.get("revise", "auto")))
++        for key, value in overrides.items():
++            if value is not None:
++                setattr(s, key, value)
++        if s.stamp not in C.WATCH_STAMP:
++            raise SomnusError(f"watch stamp mode must be one of {C.WATCH_STAMP}")
++        if s.revise not in C.WATCH_REVISE:
++            raise SomnusError(f"watch revise mode must be one of {C.WATCH_REVISE}")
++        s.interval = max(0.5, s.interval)
++        return s
++
++
++# --------------------------------------------------------------------------- single-instance lock
++
++
++class InstanceLock:
++    """Exclusive, process-lifetime lock on ``$SOMNUS_HOME/watch.lock``."""
++
++    def __init__(self, home: Path):
++        self.path = home / LOCK_NAME
++        self.fh: Optional[TextIO] = None
++
++    def acquire(self) -> bool:
++        """Take the lock; False when another watcher holds it."""
++        self.path.parent.mkdir(parents=True, exist_ok=True)
++        fh = open(self.path, "a+")
++        try:
++            _lock(fh)
++        except OSError:
++            fh.close()
++            return False
++        self.fh = fh
++        return True
++
++    def release(self) -> None:
++        """Drop the lock."""
++        fh = self.fh
++        if fh is None:
++            return
++        try:
++            _unlock(fh)
++        except OSError:
++            pass
++        fh.close()
++        self.fh = None
++
++
++if sys.platform == "win32":
++    import msvcrt
++
++    def _lock(fh: TextIO) -> None:
++        fh.seek(0)
++        msvcrt.locking(fh.fileno(), msvcrt.LK_NBLCK, 1)
++
++    def _unlock(fh: TextIO) -> None:
++        fh.seek(0)
++        msvcrt.locking(fh.fileno(), msvcrt.LK_UNLCK, 1)
++else:
++    import fcntl
++
++    def _lock(fh: TextIO) -> None:
++        fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
++
++    def _unlock(fh: TextIO) -> None:
++        fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
++
++
++def is_locked(home: Path) -> bool:
++    """True when a live watcher holds the lock."""
++    probe = InstanceLock(home)
++    if not probe.path.exists():
++        return False
++    if probe.acquire():
++        probe.release()
++        return False
++    return True
++
++
++def read_status(home: Path) -> Optional[dict]:
++    """The heartbeat written by the running (or last) watcher, or None."""
++    try:
++        data = json.loads((home / STATUS_NAME).read_text(encoding="utf-8"))
++    except (OSError, ValueError):
++        return None
++    if not isinstance(data, dict):
++        return None
++    data["running"] = is_locked(home)
++    return data
++
++
++# --------------------------------------------------------------------------- the watcher
++
++
++@dataclass
++class Watcher:
++    """Polling reconciler for the registered roots."""
++
++    home: Path
++    settings: Settings
++    roots: list[Path] = field(default_factory=list)  # empty: every registered root
++    log: Callable[[str], None] = lambda message: None
++    snapshot: dict[str, tuple[int, int]] = field(default_factory=dict)
++    pending: dict[str, float] = field(default_factory=dict)
++    counters: Counters = field(default_factory=Counters)
++    started_at: str = field(default_factory=now_iso)
++    last_scan: float = 0.0
++    first_pass: bool = True
++    stopping: bool = False
++    _configs: dict[str, C.Config] = field(default_factory=dict)
++    _written: set[str] = field(default_factory=set)
++
++    @property
++    def db_path(self) -> Path:
++        """The global registry."""
++        return self.home / "somnus.db"
++
++    # ------------------------------------------------------------ helpers
++    def _cfg(self, root: Path) -> C.Config:
++        key = str(root)
++        if key not in self._configs:
++            self._configs[key] = C.load(root)
++        return self._configs[key]
++
++    def _roots(self, st: Store) -> list[Path]:
++        if self.roots:
++            return [r.resolve() for r in self.roots]
++        return [r for _, r in st.roots()]
++
++    def _walk(self, root: Path, exclude: list[str]):
++        patterns = [glob_regex(p) for p in exclude]
++        for dirpath, dirnames, filenames in os.walk(root):
++            rel_dir = Path(os.path.relpath(dirpath, root)).as_posix()
++            prefix = "" if rel_dir == "." else rel_dir + "/"
++            dirnames[:] = [d for d in dirnames if d not in _PRUNE and not matches_any(prefix + d + "/", patterns)]
++            for name in filenames:
++                if name.startswith(".") and name.endswith(".tmp"):
++                    continue  # atomic_write temp files
++                if not matches_any(prefix + name, patterns):
++                    yield Path(dirpath) / name
++
++    # ------------------------------------------------------------ one pass
++    def tick(self) -> None:
++        """One reconciliation pass over every root."""
++        if not self.db_path.exists():
++            self.log("registry missing; run 'somnus init --root DIR' (waiting)")
++            return
++        with Store.open(self.db_path, actor=WATCH_ACTOR, create=False) as st:
++            roots = self._roots(st)
++            seen: dict[str, tuple[int, int]] = {}
++            changed: list[tuple[Path, Path]] = []
++            for root in roots:
++                if not root.is_dir():
++                    continue
++                cfg = self._cfg(root)
++                for path in self._walk(root, cfg.exclude):
++                    try:
++                        stat = path.stat()
++                    except OSError:
++                        continue
++                    key = str(path)
++                    sig = (stat.st_mtime_ns, stat.st_size)
++                    seen[key] = sig
++                    if self.snapshot.get(key) != sig or key in self.pending:
++                        changed.append((root, path))
++            removed = [k for k in self.snapshot if k not in seen]
++            now = time.time()
++            for root, path in changed:
++                self._handle(st, root, path, seen, now)
++            for key in removed:
++                self.pending.pop(key, None)
++            fresh = {k: v for k, v in self.snapshot.items() if k in self._written}
++            self.snapshot = {k: v for k, v in seen.items() if k not in self.pending}
++            self.snapshot.update(fresh)
++            self._written.clear()
++            if removed or now - self.last_scan >= self.settings.rescan:
++                for root in roots:
++                    if not root.is_dir():
++                        continue
++                    report = st.scan([root], exclude=self._cfg(root).exclude)
++                    if report.missing:
++                        self.log(f"{root}: marked {report.missing} location(s) missing")
++                self.counters.scans += 1
++                self.last_scan = now
++        self.first_pass = False
++        self.counters.ticks += 1
++
++    def _handle(self, st: Store, root: Path, path: Path, seen: dict, now: float) -> None:
++        key = str(path)
++        cfg = self._cfg(root)
++        side = carriers.is_sidecar_path(path)
++        has_side = not side and carriers.sidecar_for(path).exists()
++        embedded = side or carriers.for_path(path) is not None or (
++            cfg.json_carrier == "key" and path.suffix.lower() == ".json")
++        mode = self.settings.stamp
++        if not (side or has_side or embedded) and mode != "all":
++            self.pending.pop(key, None)  # sidecar-only host and sidecars are not wanted: never open it
++            return
++        try:
++            doc = D.load(path)
++        except SomnusError:
++            self.counters.skipped += 1
++            self.pending.pop(key, None)
++            return
++        if doc.envelope is not None or doc.issues:
++            edited = self._edited_in_place(st, doc)
++            if edited and self.settings.revise == "auto":
++                if now - seen[key][0] / 1e9 < self.settings.settle:
++                    self.pending[key] = seen[key][0] / 1e9
++                    return
++                self.pending.pop(key, None)
++                if self._revise(st, doc, seen[key]):
++                    return
++            report = st.observe(path)
++            if report is not None:
++                self.counters.indexed += 1
++                errors = [d for d in report.diagnostics if d.is_error]
++                if errors:
++                    self.counters.errors += len(errors)
++                    self.log(f"{path}: {errors[0].code} {errors[0].message}")
++            self.pending.pop(key, None)
++            return
++        if side or mode == "off" or (self.first_pass and not self.settings.adopt):
++            self.pending.pop(key, None)
++            return
++        if now - seen[key][0] / 1e9 < self.settings.settle:
++            self.pending[key] = seen[key][0] / 1e9
++            return
++        self.pending.pop(key, None)
++        self._stamp(st, root, path, seen[key])
++
++    def _edited_in_place(self, st: Store, doc: D.Document) -> bool:
++        """True when this location's registered revision was edited without a revision bump."""
++        somnus = doc.payload
++        if doc.issues or somnus is None or not isinstance(somnus.get("id"), str):
++            return False
++        found = st.root_for(doc.meta_path)
++        if found is None:
++            return False
++        rel = Path(os.path.relpath(doc.path, found[1])).as_posix()
++        row = st.conn.execute("SELECT artifact_id, revision FROM locations WHERE root_id = ? AND rel_path = ?"
++                              " AND present = 1", (found[0], rel)).fetchone()
++        if row is None or row[0] != somnus["id"] or row[1] != somnus.get("revision"):
++            return False
++        stored = st.conn.execute("SELECT payload_digest, body_digest FROM revisions WHERE artifact_id = ?"
++                                 " AND revision = ?", (row[0], row[1])).fetchone()
++        return stored is not None and tuple(stored) != (doc.payload_digest(), doc.body_digest())
++
++    def _revise(self, st: Store, doc: D.Document, sig: tuple[int, int]) -> bool:
++        """Record an in-place edit as a new revision (``watch.revise = "auto"``)."""
++        from somnus.commands._common import commit
++        from somnus.model.lifecycle import bump_revision
++        from somnus.model.validate import validate
++
++        if [d for d in validate(doc, "core") if d.is_error]:
++            return False
++        payload = doc.copy_payload()
++        old = payload["revision"]
++        bump_revision(payload)
++        try:
++            current = doc.meta_path.stat()
++            if doc.meta_path == doc.path and (current.st_mtime_ns, current.st_size) != sig:
++                return False
++            commit(doc, payload)
++        except (SomnusError, OSError) as exc:
++            self.counters.errors += 1
++            self.log(f"{doc.path}: cannot record revision: {exc}")
++            return False
++        st.log("bump", payload["id"], payload["revision"], doc.path.as_posix(), f"watch: edited in place, {old} -> "
++               f"{payload['revision']}")
++        st.resolve_conflicts(["revision"], artifact_id=payload["id"], reason="watch revision")
++        st.observe(doc.meta_path)
++        self.counters.revised += 1
++        self.log(f"revision {old} -> {payload['revision']}: {doc.path}")
++        for written in {doc.meta_path, doc.path}:
++            try:
++                s = written.stat()
++                self.snapshot[str(written)] = (s.st_mtime_ns, s.st_size)
++                self._written.add(str(written))
++            except OSError:
++                pass
++        return True
++
++    def _stamp(self, st: Store, root: Path, host: Path, sig: tuple[int, int]) -> None:
++        from somnus.commands._common import Ctx
++        from somnus.commands.stamp import _plan
++
++        ctx = Ctx(_cfg=self._cfg(root))
++        args = types.SimpleNamespace(type=None, title=None, inline=False)
++        try:
++            plan = _plan(host, args, ctx)
++        except SomnusError as exc:
++            self.counters.errors += 1
++            self.log(f"{host}: cannot stamp: {exc.diagnostics[0].message if exc.diagnostics else exc}")
++            return
++        if plan is None:
++            return
++        target, _old, new, payload = plan
++        try:
++            current = host.stat()
++            if (current.st_mtime_ns, current.st_size) != sig:
++                return  # changed while we planned; the next tick settles it again
++            D.atomic_write(target, new)
++        except OSError as exc:
++            self.counters.errors += 1
++            self.log(f"{host}: write failed: {exc}")
++            return
++        st.log("stamp", payload["id"], 1, host.as_posix(), f"watch: inferred {payload['classification']['type']}")
++        st.observe(target)
++        self.counters.stamped += 1
++        self.log(f"stamped {target} ({payload['classification']['type']})")
++        for written in {target, host}:
++            try:
++                s = written.stat()
++                self.snapshot[str(written)] = (s.st_mtime_ns, s.st_size)
++                self._written.add(str(written))
++            except OSError:
++                pass
++
++    # ------------------------------------------------------------ heartbeat and loop
++    def write_status(self, roots: list[Path]) -> None:
++        """Atomically publish the heartbeat."""
++        data = {
++            "pid": os.getpid(),
++            "version": __version__,
++            "started_at": self.started_at,
++            "last_tick_at": now_iso(),
++            "roots": [str(r) for r in roots],
++            "settings": asdict(self.settings),
++            "counters": asdict(self.counters),
++            "pending": len(self.pending),
++            "tracked_files": len(self.snapshot),
++        }
++        D.atomic_write(self.home / STATUS_NAME, json.dumps(data, indent=2) + "\n")
++
++    def run(self, once: bool = False) -> int:
++        """Loop until signalled (or one pass with ``once``)."""
++        lock = InstanceLock(self.home)
++        if not lock.acquire():
++            raise SomnusError("another somnus watcher is already running (see 'somnus daemon status')")
++
++        def _stop(signum, frame) -> None:  # noqa: ARG001 - signal handler signature
++            self.stopping = True
++
++        for name in ("SIGTERM", "SIGINT", "SIGBREAK", "SIGHUP"):
++            sig = getattr(signal, name, None)
++            if sig is not None:
++                try:
++                    signal.signal(sig, _stop)
++                except (ValueError, OSError):
++                    pass
++        self.log(f"somnus watch {__version__}: interval {self.settings.interval}s, stamp {self.settings.stamp}")
++        try:
++            while not self.stopping:
++                started = time.monotonic()
++                try:
++                    self.tick()
++                except SomnusError as exc:
++                    self.counters.errors += 1
++                    self.log(f"pass failed: {exc}")
++                except Exception as exc:  # noqa: BLE001 - a daemon reports and keeps running
++                    self.counters.errors += 1
++                    self.log(f"pass failed: {type(exc).__name__}: {exc}")
++                roots = list(self.roots)
++                if not roots and self.db_path.exists():
++                    try:
++                        with Store.open(self.db_path, actor=WATCH_ACTOR, create=False) as st:
++                            roots = [r for _, r in st.roots()]
++                    except SomnusError:
++                        roots = []
++                self.write_status(roots)
++                if once:
++                    break
++                deadline = started + self.settings.interval
++                while not self.stopping and time.monotonic() < deadline:
++                    time.sleep(min(0.25, max(0.0, deadline - time.monotonic())))
++        finally:
++            lock.release()
++        self.log("somnus watch stopped")
++        return 0
+diff --git a/tests/acceptance/installed_package_acceptance.py b/tests/acceptance/installed_package_acceptance.py
+index de1094a..626b519 100644
+--- a/tests/acceptance/installed_package_acceptance.py
++++ b/tests/acceptance/installed_package_acceptance.py
+@@ -2,7 +2,7 @@
+ # somnus:
+ #   schema: "somnus://metadata/core/2.0.0"
+ #   id: "urn:somnus:artifact:01a19a67-8200-7487-b156-caa120108f9c"
+-#   revision: 3
++#   revision: 4
+ #   title: "Installed-package acceptance for the somnus wheel (explicit invocation only)"
+ #   classification:
+ #     category: "engineering"
+@@ -18,7 +18,7 @@
+ #       - target_ref: "urn:somnus:artifact:01a19a67-8200-7487-b156-caa120108f9c"
+ #         aspects: ["content"]
+ #   time:
+-#     updated_at: "2026-11-02T04:19:42+00:00"
++#     updated_at: "2026-11-06T06:13:37+00:00"
+ #   names:
+ #     slug: "installed-package-acceptance-for-the-somnus-wheel-explicit-invocation-only"
+ #   knowledge:
+@@ -116,7 +116,7 @@ MCP_TIMEOUT = 120
+ 
+ EXPECTED_TOOLS = {
+     "brief", "bump", "check", "fork", "index", "init", "ls", "migrate",
+-    "new", "q", "regions", "schema", "set", "stale", "stamp", "status",
++    "new", "q", "regions", "schema", "set", "stale", "stamp", "status", "daemon",
+ }
+ 
+ 
+@@ -563,6 +563,67 @@ def phase_migrate(inst: Installed) -> None:
+                "pass" if code == 0 and "invalid 0" in se else "fail", se.strip())
+ 
+ 
++def phase_carriers_and_watch(inst: Installed) -> None:
++    """D20: embedded carriers for formerly sidecar-only hosts, and the installed watcher."""
++    rec = inst.rec
++    root = inst.work / "watched"
++    root.mkdir()
++    hosts = {
++        "CODEOWNERS": "* @owner\n",
++        "Dockerfile": "# syntax=docker/dockerfile:1\nFROM python:3.12\n",
++        "tool": "#!/usr/bin/env bash\necho hi\n",
++        "nb.ipynb": '{\n "cells": [],\n "metadata": {"kernelspec": {"name": "python3"}},\n'
++                    ' "nbformat": 4,\n "nbformat_minor": 5\n}\n',
++    }
++    for name, text in hosts.items():
++        (root / name).write_text(text, encoding="utf-8")
++    code, out, so, se = inst.run(["init", "--root", str(root)])
++    code, out, so, se = inst.run(["stamp", "--write", *[str(root / n) for n in hosts]])
++    sidecars = sorted(p.name for p in root.glob("*.somnus.yaml"))
++    rec.record("carriers: CODEOWNERS, Dockerfile, shebang script, and notebook embed (no sidecar)",
++               "pass" if code == 0 and not sidecars else "fail", f"exit {code}; sidecars {sidecars}")
++    docker = (root / "Dockerfile").read_text(encoding="utf-8").splitlines()
++    tool = (root / "tool").read_text(encoding="utf-8").splitlines()
++    rec.record("carriers: Docker parser directive and shebang stay on line 1",
++               "pass" if docker[0] == "# syntax=docker/dockerfile:1" and tool[0] == "#!/usr/bin/env bash"
++               and docker[-1] == "FROM python:3.12" else "fail", f"{docker[0]!r} {tool[0]!r}")
++    try:
++        nb = json.loads((root / "nb.ipynb").read_text(encoding="utf-8"))
++        nb_ok = "somnus" in nb["metadata"] and nb["metadata"]["kernelspec"] == {"name": "python3"}
++    except (ValueError, KeyError):
++        nb_ok = False
++    rec.record("carriers: notebook payload lives in metadata.somnus and the rest is unchanged",
++               "pass" if nb_ok else "fail")
++    code, out, so, se = inst.run(["check", str(root)])
++    rec.record("carriers: every new carrier validates at core level", "pass" if code == 0 else "fail",
++               out.strip()[-160:])
++
++    code, out, so, se = inst.run(["daemon", "status"])
++    rec.record("watch: status before any run reports never ran", "pass" if code == 1 and "never ran" in out
++               else "fail", out.strip()[:160])
++    fresh = root / "fresh.md"
++    fresh.write_text("# Fresh\n\nwatched body\n", encoding="utf-8")
++    code, out, so, se = inst.run(["watch", str(root), "--once", "--adopt", "--settle", "0"])
++    rec.record("watch: one pass stamps a new file inline",
++               "pass" if code == 0 and fresh.read_text(encoding="utf-8").startswith("---\nsomnus:") else "fail",
++               se.strip()[-200:])
++    with fresh.open("a", encoding="utf-8") as fh:
++        fh.write("edited in place\n")
++    code, out, so, se = inst.run(["watch", str(root), "--once", "--settle", "0"])
++    rec.record("watch: an in-place edit becomes revision 2 with no open conflict",
++               "pass" if code == 0 and 'revision: 2' in fresh.read_text(encoding="utf-8")
++               and fresh.read_text(encoding="utf-8").endswith("edited in place\n") else "fail", se.strip()[-200:])
++    code, out, so, se = inst.run(["q", "--conflicts"])
++    rec.record("watch: the registry has no open revision conflict after auto-revise",
++               "pass" if "revision " not in so else "fail", so.strip()[:160])
++    code, out, so, se = inst.run(["daemon", "status"])
++    rec.record("watch: status reads the heartbeat (stopped after --once)",
++               "pass" if code == 1 and "stopped" in out and "revised" in out else "fail", out.strip()[:200])
++    code, out, so, se = inst.run(["daemon", "install", "--dry-run"])
++    rec.record("watch: daemon install --dry-run prints the service and changes nothing",
++               "pass" if code == 0 and "somnus watch" in so else "fail", so.strip()[:160])
++
++
+ def phase_diagnostics(inst: Installed) -> None:
+     rec = inst.rec
+     unstamped = inst.work / "unstamped-note.md"
+@@ -989,7 +1050,7 @@ def main(argv: Optional[list[str]] = None) -> int:
+             return 2
+         for phase in (phase_install, phase_lifecycle, phase_host_preservation,
+                       phase_conflicts_and_recovery, phase_migrate, phase_diagnostics,
+-                      phase_agent_hints, phase_mcp, phase_tui_browser, phase_tui_pty):
++                      phase_agent_hints, phase_mcp, phase_carriers_and_watch, phase_tui_browser, phase_tui_pty):
+             phase(inst)
+         run_dir = write_artifacts(rec, root, inst.wheel, repo)
+         failed = [r for r in rec.results if r["status"] == "fail"]
+diff --git a/tests/test_carriers.py b/tests/test_carriers.py
+index a9da052..e1f0197 100644
+--- a/tests/test_carriers.py
++++ b/tests/test_carriers.py
+@@ -2,7 +2,7 @@
+ # somnus:
+ #   schema: "somnus://metadata/core/2.0.0"
+ #   id: "urn:somnus:artifact:01a19a67-8226-7442-8702-51eb9762b2b5"
+-#   revision: 1
++#   revision: 2
+ #   title: "Carriers: envelope extraction, insertion, preambles, host preservation (SPEC section 17)"
+ #   classification:
+ #     category: "engineering"
+@@ -17,7 +17,8 @@
+ #     scopes:
+ #       - target_ref: "urn:somnus:artifact:01a19a67-8226-7442-8702-51eb9762b2b5"
+ #         aspects: ["content"]
+-#   time: {}
++#   time:
++#     updated_at: "2026-11-06T06:11:50+00:00"
+ #   names:
+ #     slug: "carriers-envelope-extraction-insertion-preambles-host-preservation-spec-section"
+ #   knowledge:
+@@ -110,7 +111,7 @@ class TestDetection(unittest.TestCase):
+                 self.assertEqual(carriers.for_path(Path("f" + ext)).name, "markdown")
+ 
+     def test_sidecar_required(self) -> None:
+-        for name in ("state.json", "doc.pdf", "img.png", "nb.ipynb", "noext", "x.somnus.yaml", "a.json.somnus.yaml"):
++        for name in ("state.json", "doc.pdf", "img.png", "noext", "x.somnus.yaml", "a.json.somnus.yaml"):
+             with self.subTest(name=name):
+                 self.assertIsNone(carriers.for_path(Path(name)))
+ 
+diff --git a/tests/test_mcp.py b/tests/test_mcp.py
+index 3fdfe0e..790befc 100644
+--- a/tests/test_mcp.py
++++ b/tests/test_mcp.py
+@@ -2,7 +2,7 @@
+ # somnus:
+ #   schema: "somnus://metadata/core/2.0.0"
+ #   id: "urn:somnus:artifact:01a19a67-82f5-746c-9c46-31a9320de949"
+-#   revision: 1
++#   revision: 2
+ #   title: "MCP server: protocol handling, argparse-derived tools, argv construction, and a live stdio session"
+ #   classification:
+ #     category: "engineering"
+@@ -17,7 +17,8 @@
+ #     scopes:
+ #       - target_ref: "urn:somnus:artifact:01a19a67-82f5-746c-9c46-31a9320de949"
+ #         aspects: ["content"]
+-#   time: {}
++#   time:
++#     updated_at: "2026-11-06T06:11:51+00:00"
+ #   names:
+ #     slug: "mcp-server-protocol-handling-argparse-derived-tools-argv-construction-and-a-live"
+ #   knowledge:
+@@ -204,7 +205,7 @@ class TestTools(unittest.TestCase):
+     def test_every_noninteractive_command_is_a_tool(self) -> None:
+         parsers: dict = {}
+         build_parser(parsers)
+-        self.assertEqual(set(self.tools), set(parsers) - {"edit", "mcp"})
++        self.assertEqual(set(self.tools), set(parsers) - {"edit", "mcp", "watch"})
+         for tool in self.tools.values():
+             schema = tool.spec["inputSchema"]
+             self.assertFalse(schema["additionalProperties"])
+diff --git a/tests/test_routing.py b/tests/test_routing.py
+new file mode 100644
+index 0000000..b730f3d
+--- /dev/null
++++ b/tests/test_routing.py
+@@ -0,0 +1,273 @@
++# somnus:metadata:v2
++# somnus:
++#   schema: "somnus://metadata/core/2.0.0"
++#   id: "urn:somnus:artifact:01a1af7c-0a93-7715-b17d-9eed021e4f98"
++#   revision: 1
++#   title: "Carrier routing beyond extensions, JSON-tree carriers, and inline migration (SPEC §17, D20)"
++#   classification:
++#     category: "engineering"
++#     type: "source-code"
++#     role: "informative"
++#     scope: "component"
++#     tags: []
++#   lifecycle:
++#     status: "draft"
++#   authority:
++#     standing: "candidate"
++#     scopes:
++#       - target_ref: "urn:somnus:artifact:01a1af7c-0a93-7715-b17d-9eed021e4f98"
++#         aspects: ["content"]
++#   time: {}
++#   names:
++#     slug: "carrier-routing-beyond-extensions-json-tree-carriers-and-inline-migration-spec-1"
++#   knowledge:
++#     coverage: "artifact"
++#     subjects: ["urn:somnus:artifact:01a1af7c-0a93-7715-b17d-9eed021e4f98"]
++#   access:
++#     visibility: "internal"
++#     allowed_uses: ["archive", "search", "reason"]
++#   ingestion:
++#     disposition: "candidate"
++#     body_role: "source"
++# somnus:end
++"""Carrier routing beyond extensions, JSON-tree carriers, and inline migration (SPEC §17, D20)."""
++
++from __future__ import annotations
++
++import json
++import os
++import shutil
++import tempfile
++import unittest
++from pathlib import Path
++
++from somnus import carriers
++from somnus import document as D
++from somnus.carriers.jsonhost import JSON_KEY, NOTEBOOK, object_members
++from somnus.model.validate import validate
++
++from test_commands import CliCase
++
++NOTEBOOK_TEXT = """{
++ "cells": [
++  {
++   "cell_type": "code",
++   "execution_count": null,
++   "metadata": {},
++   "outputs": [],
++   "source": ["print('hello world')"]
++  }
++ ],
++ "metadata": {
++  "kernelspec": {"display_name": "Python 3", "name": "python3"}
++ },
++ "nbformat": 4,
++ "nbformat_minor": 5
++}
++"""
++
++
++class TempDirCase(unittest.TestCase):
++    def setUp(self) -> None:
++        self.dir = Path(tempfile.mkdtemp())
++
++    def tearDown(self) -> None:
++        shutil.rmtree(self.dir, ignore_errors=True)
++
++    def put(self, name: str, text: str) -> Path:
++        path = self.dir / name
++        path.write_text(text, encoding="utf-8")
++        return path
++
++
++class TestFilenameRouting(TempDirCase):
++    def test_exact_filenames(self) -> None:
++        for name, expected in (("CODEOWNERS", "hash"), ("MANIFEST.in", "hash"), ("Makefile", "hash"),
++                               ("Dockerfile", "dockerfile"), (".gitignore", "hash"), (".env", "hash"),
++                               ("Gemfile", "hash"), ("tsconfig.json", "jsonc"), ("CMakeLists.txt", "hash"),
++                               ("Pipfile", "toml"), ("BUILD.bazel", "python")):
++            with self.subTest(name=name):
++                self.assertEqual(carriers.carrier_name_for(Path(name), sniff=False), expected)
++
++    def test_patterns(self) -> None:
++        for name, expected in (("requirements-dev.txt", "hash"), ("requirements.txt", "hash"),
++                               (".env.local", "hash"), ("Dockerfile.prod", "dockerfile"),
++                               ("tsconfig.build.json", "jsonc")):
++            with self.subTest(name=name):
++                self.assertEqual(carriers.carrier_name_for(Path(name), sniff=False), expected)
++
++    def test_new_extensions(self) -> None:
++        for name, expected in (("a.rb", "hash"), ("a.tf", "hash"), ("a.ini", "hash"), ("a.lua", "lua"),
++                               ("a.hs", "lua"), ("a.zig", "slash"), ("a.vue", "xml"), ("a.jsonc", "jsonc"),
++                               ("a.json5", "jsonc"), ("a.ipynb", "ipynb"), ("a.pyi", "python")):
++            with self.subTest(name=name):
++                self.assertEqual(carriers.carrier_name_for(Path(name), sniff=False), expected)
++
++    def test_plain_text_and_binaries_stay_sidecar(self) -> None:
++        for name in ("notes.txt", "a.png", "a.pdf", "a.log", "config.h.in", "data.csv"):
++            with self.subTest(name=name):
++                self.assertIsNone(carriers.carrier_name_for(Path(name), sniff=False))
++
++    def test_sidecar_files_are_never_hosts(self) -> None:
++        self.assertIsNone(carriers.carrier_name_for(Path("Dockerfile.somnus.yaml")))
++
++
++class TestShebang(TempDirCase):
++    def test_interpreters(self) -> None:
++        for line, expected in (("#!/usr/bin/env python3", "python"), ("#!/bin/bash", "shell"),
++                               ("#!/usr/bin/env -S node --no-warnings", "js"), ("#!/usr/bin/perl -w", "hash"),
++                               ("#!/usr/bin/env python3.12", "python"), ("#!/usr/bin/env unknownthing", None)):
++            with self.subTest(line=line):
++                self.assertEqual(carriers.shebang_carrier((line + "\n").encode()), expected)
++
++    def test_extensionless_script_on_disk(self) -> None:
++        path = self.put("tool", "#!/usr/bin/env bash\necho hi\n")
++        self.assertEqual(carriers.carrier_name_for(path), "shell")
++        self.assertIsNone(carriers.carrier_name_for(self.put("blob", "no shebang\n")))
++
++    def test_stamp_keeps_shebang_first(self) -> None:
++        path = self.put("tool", "#!/usr/bin/env bash\necho hi\n")
++        doc = D.load(path)
++        text = doc.render({"schema": "x"})
++        self.assertTrue(text.startswith("#!/usr/bin/env bash\n# somnus:metadata:v2\n"))
++
++
++class TestDockerfile(TempDirCase):
++    def test_parser_directives_stay_first(self) -> None:
++        path = self.put("Dockerfile", "# syntax=docker/dockerfile:1\n# escape=`\nFROM python:3.12\n")
++        text = D.load(path).render({"schema": "x"})
++        lines = text.split("\n")
++        self.assertEqual(lines[:3], ["# syntax=docker/dockerfile:1", "# escape=`", "# somnus:metadata:v2"])
++        self.assertIn("FROM python:3.12", lines)
++
++
++class TestJsonKey(TempDirCase):
++    def test_detection_requires_leading_key(self) -> None:
++        self.assertTrue(carriers.json_key_present(b'{\n  "$somnus": {}}'))
++        self.assertFalse(carriers.json_key_present(b'{"a": 1, "$somnus": {}}'))
++        self.assertFalse(carriers.json_key_present(b"[1, 2]"))
++
++    def test_insert_preserves_members_and_indent(self) -> None:
++        path = self.put("package.json", '{\n    "name": "x",\n    "v": [1, 2]\n}\n')
++        doc = D.as_carrier(path, JSON_KEY)
++        self.assertIsNone(doc.envelope)
++        text = doc.render({"schema": "s", "id": "i"})
++        data = json.loads(text)
++        self.assertEqual(list(data), ["$somnus", "name", "v"])
++        self.assertTrue(text.startswith('{\n    "$somnus": {\n        "schema": "s"'))
++        self.assertTrue(text.endswith('    "name": "x",\n    "v": [1, 2]\n}\n'))
++
++    def test_replace_touches_only_the_value(self) -> None:
++        path = self.put("a.json", '{"$somnus": {"schema": "old"}, "keep": {"z": 1,  "a": 2}}\n')
++        doc = D.load(path)
++        self.assertEqual(doc.carrier.name, "json")
++        self.assertEqual(doc.payload, {"schema": "old"})
++        text = doc.render({"schema": "new"})
++        self.assertEqual(text, '{"$somnus": {"schema":"new"}, "keep": {"z": 1,  "a": 2}}\n')
++
++    def test_host_view_excludes_payload(self) -> None:
++        path = self.put("a.json", '{"$somnus": {"schema": "old"}, "k": 1}\n')
++        doc = D.load(path)
++        self.assertNotIn("$somnus", "\n".join(doc.body_lines()))
++        before = doc.body_digest()
++        path.write_text('{"$somnus": {"schema": "new"}, "k": 1}\n', encoding="utf-8")
++        self.assertEqual(D.load(path).body_digest(), before)
++
++    def test_object_members_errors(self) -> None:
++        with self.assertRaises(ValueError):
++            object_members("[1]", 0)
++
++
++class TestNotebook(TempDirCase):
++    def test_round_trip(self) -> None:
++        path = self.put("nb.ipynb", NOTEBOOK_TEXT)
++        doc = D.load(path)
++        self.assertIs(doc.carrier, NOTEBOOK)
++        self.assertIsNone(doc.envelope)
++        text = doc.render({"schema": "s", "title": "T"})
++        nb = json.loads(text)
++        self.assertEqual(nb["metadata"]["somnus"], {"schema": "s", "title": "T"})
++        self.assertEqual(nb["metadata"]["kernelspec"]["name"], "python3")
++        self.assertEqual(nb["cells"], json.loads(NOTEBOOK_TEXT)["cells"])
++        path.write_text(text, encoding="utf-8")
++        again = D.load(path)
++        self.assertEqual(again.payload["title"], "T")
++        self.assertIn("print('hello world')", "\n".join(again.body_lines()))
++
++    def test_without_metadata_refuses(self) -> None:
++        path = self.put("nb.ipynb", '{"cells": []}\n')
++        with self.assertRaises(Exception):
++            D.load(path).render({"schema": "s"})
++
++
++class TestStampAndInline(CliCase):
++    def test_stamp_new_hosts_inline(self) -> None:
++        self.init()
++        files = {
++            "CODEOWNERS": "* @owner\n",
++            "Dockerfile": "FROM x\n",
++            "tool": "#!/usr/bin/env python3\nprint(1)\n",
++            "conf.jsonc": "{\n  // c\n  \"a\": 1\n}\n",
++            "nb.ipynb": NOTEBOOK_TEXT,
++        }
++        for name, text in files.items():
++            self.write(name, text)
++        self.ok("stamp", "--write", *[str(self.ws / n) for n in files])
++        for name in files:
++            with self.subTest(name=name):
++                self.assertFalse((self.ws / (name + ".somnus.yaml")).exists())
++                doc = D.load(self.ws / name)
++                self.assertFalse(doc.is_sidecar)
++                self.assertFalse([d for d in validate(doc, "core") if d.is_error])
++        self.assertEqual(D.load(self.ws / "CODEOWNERS").payload["classification"]["type"], "configuration")
++        self.assertEqual(D.load(self.ws / "tool").payload["classification"]["type"], "source-code")
++
++    def test_plain_json_needs_opt_in(self) -> None:
++        self.init()
++        self.write("a.json", '{"k": 1}\n')
++        self.ok("stamp", "--write", str(self.ws / "a.json"))
++        self.assertTrue((self.ws / "a.json.somnus.yaml").exists())
++        self.write("b.json", '{"k": 1}\n')
++        self.ok("stamp", "--write", "--inline", str(self.ws / "b.json"))
++        self.assertFalse((self.ws / "b.json.somnus.yaml").exists())
++        self.assertEqual(json.loads((self.ws / "b.json").read_text())["k"], 1)
++        self.write("c.json", "[1, 2]\n")
++        self.ok("stamp", "--write", "--inline", str(self.ws / "c.json"))
++        self.assertTrue((self.ws / "c.json.somnus.yaml").exists())
++
++    def test_migrate_inline_moves_sidecar(self) -> None:
++        self.init()
++        host = self.write("CODEOWNERS", "* @owner\n")
++        sidecar = self.ws / "CODEOWNERS.somnus.yaml"
++        # Build a legacy sidecar the way <=2.1 stamped extensionless hosts.
++        from somnus.commands._common import inferred_payload
++        from somnus import config as C
++
++        legacy = inferred_payload(C.load(self.ws), host, [])
++        legacy["bindings"] = [{"target": "CODEOWNERS", "role": "primary", "required": True}]
++        sidecar.write_text(D.new_sidecar_text(legacy), encoding="utf-8")
++        self.ok("index", str(self.ws))
++        code, out, _ = self.cli("migrate", "--inline", str(self.ws))
++        self.assertEqual(code, 0)
++        self.assertIn("sidecar removed", out)
++        self.assertTrue(sidecar.exists())
++        self.ok("migrate", "--inline", "--write", str(self.ws))
++        self.assertFalse(sidecar.exists())
++        doc = D.load(host)
++        self.assertEqual(doc.payload["id"], legacy["id"])
++        self.assertEqual(doc.payload["revision"], 2)
++        self.assertNotIn("bindings", doc.payload)
++        self.assertTrue(host.read_text().endswith("* @owner\n"))
++        _, out, err = self.cli("q", "--conflicts")
++        self.assertNotIn("revision ", out)
++
++    def test_migrate_inline_keeps_true_sidecars(self) -> None:
++        self.init()
++        self.write("data.csv", "a,b\n")
++        self.ok("stamp", "--write", str(self.ws / "data.csv"))
++        self.ok("migrate", "--inline", "--write", str(self.ws))
++        self.assertTrue((self.ws / "data.csv.somnus.yaml").exists())
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/tests/test_watch.py b/tests/test_watch.py
+new file mode 100644
+index 0000000..462e210
+--- /dev/null
++++ b/tests/test_watch.py
+@@ -0,0 +1,288 @@
++# somnus:metadata:v2
++# somnus:
++#   schema: "somnus://metadata/core/2.0.0"
++#   id: "urn:somnus:artifact:01a1af7c-0ab0-70fe-bbb0-b763f149e729"
++#   revision: 1
++#   title: "The always-on watcher, its single-instance lock, config, and service plans (D20)"
++#   classification:
++#     category: "engineering"
++#     type: "source-code"
++#     role: "informative"
++#     scope: "component"
++#     tags: []
++#   lifecycle:
++#     status: "draft"
++#   authority:
++#     standing: "candidate"
++#     scopes:
++#       - target_ref: "urn:somnus:artifact:01a1af7c-0ab0-70fe-bbb0-b763f149e729"
++#         aspects: ["content"]
++#   time: {}
++#   names:
++#     slug: "the-always-on-watcher-its-single-instance-lock-config-and-service-plans-d20"
++#   knowledge:
++#     coverage: "artifact"
++#     subjects: ["urn:somnus:artifact:01a1af7c-0ab0-70fe-bbb0-b763f149e729"]
++#   access:
++#     visibility: "internal"
++#     allowed_uses: ["archive", "search", "reason"]
++#   ingestion:
++#     disposition: "candidate"
++#     body_role: "source"
++# somnus:end
++"""The always-on watcher, its single-instance lock, config, and service plans (D20)."""
++
++from __future__ import annotations
++
++import os
++import time
++import unittest
++from pathlib import Path
++
++from somnus import config as C
++from somnus import document as D
++from somnus import service
++from somnus.db.store import Store
++from somnus.watch import InstanceLock, Settings, Watcher, is_locked, read_status
++
++from test_commands import CliCase
++
++
++def age(path: Path, seconds: float = 60.0) -> None:
++    """Backdate a file so the watcher treats it as settled."""
++    then = time.time() - seconds
++    os.utime(path, (then, then))
++
++
++class WatchCase(CliCase):
++    def watcher(self, **overrides) -> Watcher:
++        cfg = C.load(self.ws)
++        settings = Settings.from_config(cfg, **overrides)
++        self.logs: list[str] = []
++        return Watcher(cfg.home, settings, log=self.logs.append)
++
++    def ids(self) -> set[str]:
++        with Store.open(C.load(self.ws).db_path, create=False) as st:
++            return {r[0] for r in st.conn.execute("SELECT id FROM artifacts")}
++
++
++class TestTick(WatchCase):
++    def test_existing_files_are_not_adopted_by_default(self) -> None:
++        self.init()
++        old = self.write("old.py", "x = 1\n")
++        age(old)
++        w = self.watcher()
++        w.tick()
++        self.assertIsNone(D.load(old).envelope)
++        w.tick()
++        self.assertIsNone(D.load(old).envelope)
++
++    def test_adopt_stamps_existing(self) -> None:
++        self.init()
++        old = self.write("old.py", "x = 1\n")
++        age(old)
++        self.watcher(adopt=True).tick()
++        self.assertIsNotNone(D.load(old).envelope)
++        self.assertEqual(len(self.ids()), 1)
++
++    def test_new_file_waits_for_settle_then_stamps(self) -> None:
++        self.init()
++        w = self.watcher(settle=30.0)
++        w.tick()
++        new = self.write("new.md", "# Hello\n\nbody\n")
++        w.tick()
++        self.assertIsNone(D.load(new).envelope)
++        self.assertIn(str(new), w.pending)
++        age(new)
++        w.tick()
++        doc = D.load(new)
++        self.assertIsNotNone(doc.envelope)
++        self.assertEqual(doc.payload["title"], "Hello")
++        self.assertEqual(w.counters.stamped, 1)
++        self.assertNotIn(str(new), w.pending)
++
++    def test_inline_mode_never_creates_sidecars(self) -> None:
++        self.init()
++        w = self.watcher()
++        w.tick()
++        for name in ("data.csv", "img.png"):
++            age(self.write(name, "x\n"))
++        w.tick()
++        self.assertEqual(sorted(p.name for p in self.ws.iterdir()), ["data.csv", "img.png"])
++
++    def test_all_mode_creates_sidecars(self) -> None:
++        self.init()
++        w = self.watcher(stamp="all")
++        w.tick()
++        age(self.write("data.csv", "x\n"))
++        w.tick()
++        self.assertTrue((self.ws / "data.csv.somnus.yaml").exists())
++
++    def test_off_mode_indexes_only(self) -> None:
++        self.init()
++        w = self.watcher(stamp="off")
++        w.tick()
++        age(self.write("new.py", "x = 1\n"))
++        w.tick()
++        self.assertIsNone(D.load(self.ws / "new.py").envelope)
++
++    def test_excluded_dirs_are_never_touched(self) -> None:
++        self.init()
++        w = self.watcher(adopt=True)
++        venv = self.ws / ".venv" / "lib"
++        venv.mkdir(parents=True)
++        lib = venv / "mod.py"
++        lib.write_text("x = 1\n")
++        age(lib)
++        w.tick()
++        self.assertIsNone(D.load(lib).envelope)
++
++    def test_edit_in_place_becomes_new_revision(self) -> None:
++        self.init()
++        w = self.watcher()
++        w.tick()
++        path = self.write("note.md", "# Note\n\nfirst\n")
++        age(path)
++        w.tick()
++        self.assertEqual(D.load(path).payload["revision"], 1)
++        with path.open("a", encoding="utf-8") as fh:
++            fh.write("second\n")
++        age(path, 30)
++        w.tick()
++        doc = D.load(path)
++        self.assertEqual(doc.payload["revision"], 2)
++        self.assertTrue(path.read_text().endswith("first\nsecond\n"))
++        _, out, _ = self.cli("q", "--conflicts")
++        self.assertNotIn("revision ", out)
++
++    def test_revise_off_leaves_conflict(self) -> None:
++        self.init()
++        w = self.watcher(revise="off")
++        w.tick()
++        path = self.write("note.md", "# Note\n\nfirst\n")
++        age(path)
++        w.tick()
++        with path.open("a", encoding="utf-8") as fh:
++            fh.write("second\n")
++        age(path, 30)
++        w.tick()
++        self.assertEqual(D.load(path).payload["revision"], 1)
++        _, out, _ = self.cli("q", "--conflicts")
++        self.assertIn("revision", out)
++
++    def test_deletion_marks_missing(self) -> None:
++        self.init()
++        w = self.watcher()
++        w.tick()
++        path = self.write("gone.md", "# Gone\n")
++        age(path)
++        w.tick()
++        path.unlink()
++        w.tick()
++        _, out, _ = self.cli("ls")
++        self.assertNotIn("gone.md", out)
++
++    def test_missing_registry_waits(self) -> None:
++        w = self.watcher()
++        w.tick()
++        self.assertTrue(any("registry missing" in line for line in self.logs))
++
++
++class TestRunAndStatus(WatchCase):
++    def test_once_writes_heartbeat(self) -> None:
++        self.init()
++        w = self.watcher()
++        self.assertEqual(w.run(once=True), 0)
++        data = read_status(w.home)
++        self.assertIsNotNone(data)
++        self.assertFalse(data["running"])
++        self.assertEqual(data["roots"], [str(self.ws.resolve())])
++        self.assertEqual(data["counters"]["ticks"], 1)
++
++    def test_lock_is_exclusive(self) -> None:
++        self.init()
++        home = C.load(self.ws).home
++        first = InstanceLock(home)
++        self.assertTrue(first.acquire())
++        try:
++            self.assertTrue(is_locked(home))
++            with self.assertRaises(Exception):
++                self.watcher().run(once=True)
++        finally:
++            first.release()
++        self.assertFalse(is_locked(home))
++
++    def test_daemon_status_cli(self) -> None:
++        self.init()
++        code, out, _ = self.cli("daemon", "status")
++        self.assertNotEqual(code, 0)
++        self.assertIn("never ran", out)
++        self.ok("watch", "--once", "--quiet")
++        code, out, _ = self.cli("daemon", "status")
++        self.assertIn("stopped", out)
++
++    def test_install_dry_run_changes_nothing(self) -> None:
++        self.init()
++        out = self.ok("daemon", "install", "--dry-run")
++        self.assertIn("somnus watch", out)
++
++
++class TestConfig(WatchCase):
++    def test_watch_and_carrier_tables(self) -> None:
++        local = self.ws / ".somnus.toml"
++        local.write_text('[watch]\ninterval = 2\nstamp = "off"\nrevise = "off"\nadopt = true\n'
++                         '[carriers]\njson = "key"\n', encoding="utf-8")
++        cfg = C.load(self.ws)
++        self.assertEqual(cfg.json_carrier, "key")
++        s = Settings.from_config(cfg)
++        self.assertEqual((s.interval, s.stamp, s.revise, s.adopt), (2.0, "off", "off", True))
++
++    def test_invalid_values(self) -> None:
++        local = self.ws / ".somnus.toml"
++        for text in ('[watch]\nstamp = "sometimes"\n', '[watch]\ninterval = -1\n', '[watch]\nbogus = 1\n',
++                     '[carriers]\njson = "comment"\n', '[watch]\nadopt = "yes"\n'):
++            with self.subTest(text=text):
++                local.write_text(text, encoding="utf-8")
++                with self.assertRaises(C.ConfigError):
++                    C.load(self.ws)
++
++    def test_template_parses(self) -> None:
++        home = self.tmp / "home"
++        home.mkdir(exist_ok=True)
++        (home / "config.toml").write_text(C.CONFIG_TEMPLATE, encoding="utf-8")
++        cfg = C.load(self.ws)
++        self.assertEqual(cfg.watch["stamp"], "inline")
++
++
++class TestServicePlans(unittest.TestCase):
++    def test_linux_unit(self) -> None:
++        plan = service.install_plan(Path("/h/.somnus"), "linux")
++        self.assertIn("-m somnus watch", plan.content)
++        self.assertIn("SOMNUS_HOME=/h/.somnus", plan.content)
++        self.assertEqual(plan.commands[-1][-2:], ["--now", service.UNIT_NAME])
++
++    def test_darwin_plist(self) -> None:
++        plan = service.install_plan(Path("/h/.somnus"), "darwin")
++        self.assertIn("<key>KeepAlive</key><true/>", plan.content)
++        self.assertTrue(str(plan.path).endswith("dev.somnus.watch.plist"))
++
++    def test_windows_task(self) -> None:
++        plan = service.install_plan(Path("C:/h"), "windows")
++        self.assertIn(service.TASK_NAME, plan.commands[0])
++        self.assertIsNone(plan.path)
++
++    def test_apply_with_fake_runner(self) -> None:
++        calls: list[list[str]] = []
++
++        def runner(argv):
++            calls.append(list(argv))
++            return 0, ""
++
++        plan = service.Plan("windows", None, "", [["a"], ["b"]])
++        lines = service.apply(plan, runner=runner)
++        self.assertEqual(calls, [["a"], ["b"]])
++        self.assertTrue(all(": ok" in line for line in lines))
++
++
++if __name__ == "__main__":
++    unittest.main()

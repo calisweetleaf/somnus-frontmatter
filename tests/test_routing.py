@@ -2,7 +2,7 @@
 # somnus:
 #   schema: "somnus://metadata/core/2.0.0"
 #   id: "urn:somnus:artifact:01a1af7c-0a93-7715-b17d-9eed021e4f98"
-#   revision: 4
+#   revision: 1
 #   title: "Carrier routing beyond extensions, JSON-tree carriers, and inline migration (SPEC §17, D20)"
 #   classification:
 #     category: "engineering"
@@ -17,8 +17,7 @@
 #     scopes:
 #       - target_ref: "urn:somnus:artifact:01a1af7c-0a93-7715-b17d-9eed021e4f98"
 #         aspects: ["content"]
-#   time:
-#     updated_at: "2026-11-06T23:17:28+00:00"
+#   time: {}
 #   names:
 #     slug: "carrier-routing-beyond-extensions-json-tree-carriers-and-inline-migration-spec-1"
 #   knowledge:
@@ -36,6 +35,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import tempfile
 import unittest
@@ -45,7 +45,6 @@ from somnus import carriers
 from somnus import document as D
 from somnus.carriers.jsonhost import JSON_KEY, NOTEBOOK, object_members
 from somnus.model.validate import validate
-from somnus.output import SomnusError
 
 from test_commands import CliCase
 
@@ -77,7 +76,7 @@ class TempDirCase(unittest.TestCase):
 
     def put(self, name: str, text: str) -> Path:
         path = self.dir / name
-        path.write_text(text, encoding="utf-8", newline="")
+        path.write_text(text, encoding="utf-8")
         return path
 
 
@@ -86,9 +85,7 @@ class TestFilenameRouting(TempDirCase):
         for name, expected in (("CODEOWNERS", "hash"), ("MANIFEST.in", "hash"), ("Makefile", "hash"),
                                ("Dockerfile", "dockerfile"), (".gitignore", "hash"), (".env", "hash"),
                                ("Gemfile", "hash"), ("tsconfig.json", "jsonc"), ("CMakeLists.txt", "hash"),
-                               ("Pipfile", "toml"), ("BUILD.bazel", "python"),
-                               (".importlinter", "hash"), (".pre-commit-config.yaml", "yaml"),
-                               (".ruff.toml", "toml")):
+                               ("Pipfile", "toml"), ("BUILD.bazel", "python")):
             with self.subTest(name=name):
                 self.assertEqual(carriers.carrier_name_for(Path(name), sniff=False), expected)
 
@@ -199,7 +196,7 @@ class TestNotebook(TempDirCase):
 
     def test_without_metadata_refuses(self) -> None:
         path = self.put("nb.ipynb", '{"cells": []}\n')
-        with self.assertRaises(SomnusError):
+        with self.assertRaises(Exception):
             D.load(path).render({"schema": "s"})
 
 

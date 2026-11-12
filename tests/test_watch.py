@@ -2,7 +2,7 @@
 # somnus:
 #   schema: "somnus://metadata/core/2.0.0"
 #   id: "urn:somnus:artifact:01a1af7c-0ab0-70fe-bbb0-b763f149e729"
-#   revision: 3
+#   revision: 1
 #   title: "The always-on watcher, its single-instance lock, config, and service plans (D20)"
 #   classification:
 #     category: "engineering"
@@ -17,8 +17,7 @@
 #     scopes:
 #       - target_ref: "urn:somnus:artifact:01a1af7c-0ab0-70fe-bbb0-b763f149e729"
 #         aspects: ["content"]
-#   time:
-#     updated_at: "2026-11-06T12:39:37+00:00"
+#   time: {}
 #   names:
 #     slug: "the-always-on-watcher-its-single-instance-lock-config-and-service-plans-d20"
 #   knowledge:
@@ -44,7 +43,6 @@ from somnus import config as C
 from somnus import document as D
 from somnus import service
 from somnus.db.store import Store
-from somnus.output import SomnusError
 from somnus.watch import InstanceLock, Settings, Watcher, is_locked, read_status
 
 from test_commands import CliCase
@@ -94,14 +92,14 @@ class TestTick(WatchCase):
         new = self.write("new.md", "# Hello\n\nbody\n")
         w.tick()
         self.assertIsNone(D.load(new).envelope)
-        self.assertIn(str(new.resolve()), w.pending)
+        self.assertIn(str(new), w.pending)
         age(new)
         w.tick()
         doc = D.load(new)
         self.assertIsNotNone(doc.envelope)
         self.assertEqual(doc.payload["title"], "Hello")
         self.assertEqual(w.counters.stamped, 1)
-        self.assertNotIn(str(new.resolve()), w.pending)
+        self.assertNotIn(str(new), w.pending)
 
     def test_inline_mode_never_creates_sidecars(self) -> None:
         self.init()
@@ -208,7 +206,7 @@ class TestRunAndStatus(WatchCase):
         self.assertTrue(first.acquire())
         try:
             self.assertTrue(is_locked(home))
-            with self.assertRaises(SomnusError):
+            with self.assertRaises(Exception):
                 self.watcher().run(once=True)
         finally:
             first.release()
@@ -226,8 +224,7 @@ class TestRunAndStatus(WatchCase):
     def test_install_dry_run_changes_nothing(self) -> None:
         self.init()
         out = self.ok("daemon", "install", "--dry-run")
-        expected = "<string>somnus</string><string>watch</string>" if service.platform_name() == "darwin" else "somnus watch"
-        self.assertIn(expected, out)
+        self.assertIn("somnus watch", out)
 
 
 class TestConfig(WatchCase):
@@ -261,7 +258,7 @@ class TestServicePlans(unittest.TestCase):
     def test_linux_unit(self) -> None:
         plan = service.install_plan(Path("/h/.somnus"), "linux")
         self.assertIn("-m somnus watch", plan.content)
-        self.assertIn(f"SOMNUS_HOME={Path('/h/.somnus')}", plan.content)
+        self.assertIn("SOMNUS_HOME=/h/.somnus", plan.content)
         self.assertEqual(plan.commands[-1][-2:], ["--now", service.UNIT_NAME])
 
     def test_darwin_plist(self) -> None:

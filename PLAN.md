@@ -2,7 +2,7 @@
 somnus:
   schema: "somnus://metadata/core/2.0.0"
   id: "urn:somnus:artifact:01a19a67-78dc-7498-970f-47643c9ce413"
-  revision: 18
+  revision: 12
   title: "Somnus Metadata — Completion and Operator Integration Plan"
   classification:
     category: "operations"
@@ -18,7 +18,7 @@ somnus:
       - target_ref: "urn:somnus:artifact:01a19a67-78dc-7498-970f-47643c9ce413"
         aspects: ["content"]
   time:
-    updated_at: "2026-11-06T23:33:04+00:00"
+    updated_at: "2026-11-02T06:49:21+00:00"
   names:
     slug: "somnus-metadata-completion-and-operator-integration-plan"
   knowledge:
@@ -32,121 +32,6 @@ somnus:
     body_role: "narrative"
 ---
 # Somnus Metadata — Completion and Operator Integration Plan
-
-## Complete v2 integration follow-through: 2026-11-06
-
-PR #11 completes the full archive comparison after PR #10's runtime repair.
-Every supplied file is now accounted for. Five configuration sidecars moved
-inline through the toolkit, preserving IDs and host content; the missing
-WHERE-WE-ARE handoff is restored with current publication status. See
-[docs/INTEGRATION_AUDIT.md](docs/INTEGRATION_AUDIT.md) for the complete disposition.
-
-Issue #5 is addressed: the legacy migration mapper is split by field family,
-with 3,000 differential cases matching ordered payloads/errors and preserving
-caller input. All 579 unit tests pass, coverage is 87.47%, mypy and configured
-Ruff pass, all six import contracts pass, and semantic checks are clean. Final
-wheel/source bytes match and strict Twine checks pass; final hosted validation
-is attached to PR #11. The stale wiki PR #9 is closed because it removes metadata
-headers and describes pre-D20 state. Factory wiki refresh is manual-only.
-
-Publication of 2.2.1 and inspection/cleanup of untracked nested extraction folders
-on the laptop remain blocked by publisher access and the offline laptop. No
-local installation or machine cleanup is claimed. The older entries below
-record their own earlier state and are superseded by this follow-through.
-
-## Supplied revision correction: 2.2.1 (prepared, not published)
-
-On 2026-11-06, independent comparison established that PyPI 2.2.0 exactly matches
-main at 8768811 but omits changes present in the supplied branch ZIP. PR #10
-restores the supplied heartbeat module and its daemon/TUI consumers, and filename
-routing for .importlinter, .pre-commit-config.yaml and .ruff.toml. The unnecessary
-TUI-to-watch import exception is removed. Later cross-platform test repairs are
-retained; metadata core remains 2.0.0.
-
-Verification: 579 unit tests, mypy 56 files, configured Ruff checks, all six import
-contracts, 87.44% coverage, 77/77 installed-package acceptance checks (real SQLite,
-MCP, watcher and POSIX PTY), strict Twine validation of wheel and sdist, and green
-hosted CI and CodeQL on implementation commit d0ee1e0.
-
-Plugin 1.3.0 exactly matches the supplied ZIP; native export and all 28 tests pass.
-It remains private. Issues #2, #3, #4 and #6 were already resolved and are closed:
-D18 removed the undefined warning, registry notes use the TUI status line, real
-POSIX PTY tests exist, and the working documents have valid metadata headers.
-Issue #5 remains the outstanding migration-function refactor.
-
-PyPI 2.2.1 is NOT published: this cloud environment has no publishing credentials,
-and the connected laptop is offline. Complete the existing release runbook with
-the authorized publisher, verify public artifact hashes and a fresh installation,
-then update the README publication status. No tag or GitHub Release was created.
-The expired Factory subscription still blocks wiki refresh.
-
-## Canonical D20 release — 2026-11-06
-
-Operator authorized the supplied 2.2.0/D20 patch and plugin 1.3.0 as canonical,
-including D20 ratification. Applied `patch/somnus-metadata-2.2.0-D20.patch`
-directly in the backend; overlaid the supplied `somnus-metadata-plugin-1.3.0/`
-payload in the sibling plugin repository. No compatibility fork was introduced.
-The plugin's old `.gitignore.somnus.yaml` was removed because the canonical
-payload embeds that same identity in `.gitignore`. Pre-existing archive/wiki
-moves, research files, supplied folders and ZIPs remain outside release commits.
-
-- PyPI **somnus-metadata 2.2.0** is published; wheel and sdist SHA256 values
-  match the PyPI release API. Strict Twine validation passed for both.
-- Global plain pip fetched **2.2.0** without cache from public PyPI; installed
-  `somnus --version` reports 2.2.0 outside the checkout. Then `pip install
-  somnus-debug` installed **0.1.0** in `~/.venvs/global`.
-- Backend: **579 tests pass**, mypy **55 files clean**, configured Ruff selection
-  passes, SPEC/DECISIONS semantic checks **0 errors / 0 warnings**.
-- Source-built installed acceptance **77/77**; exact uploaded-wheel acceptance
-  **77/77**, **0 failed / 0 not run**, including CLI, real files/SQLite, MCP,
-  carriers/watcher and POSIX terminal consumers. Exact-wheel artifacts:
-  `/tmp/somnus-exact-release-2.2.0-oi12ape7/runs/20261106T123507Z`.
-- Plugin **1.3.0** native export check and **28 tests pass**. Only release repairs:
-  removed an unused test import and narrowed two exception assertions to the
-  actual `SomnusError`; runtime implementation remains the canonical patch.
-- Doctor baseline/rescan cover **49 -> 55 source files**, **373 -> 439 findings**,
-  **71 -> 103 serious**, **0 critical** in both. Delta exits **1**, not green.
-  New findings include defensive parser/status fallbacks, lock/cleanup and
-  watcher error handling, the argv-list/timeout service subprocess runner,
-  a broad decoration-only TUI fallback, and the short JSON carrier class.
-  These static findings are deferred for focused review, not suppressed or
-  presented as runtime failures. No thresholds or scanning scope were weakened.
-  Reports and the full delta: `/tmp/somnus-release-220/`.
-- Initial `python -m build` used a different PATH interpreter without the build
-  frontend; `uv build` successfully produced both artifacts. No source fix was
-  needed. First lint run found the three test issues above; rerun passes.
-
-Both main branches were committed and pushed with upstream tracking:
-backend `5136ca9` and plugin `5514312`. Remote refs confirm those commits.
-The uploaded wheel matches all **57 runtime files** in current source.
-The GitHub backend push reported the existing required-check bypass while fresh
-hosted checks had not completed; local gates above are independent evidence.
-Plugin hosted CI **42219036607 passed**. Backend hosted CI exposed test-only
-platform assumptions: fixture LF bytes were translated on Windows, pending-path
-assertions did not resolve macOS/Windows aliases, the launchd dry-run expected a
-Linux command string, and a Linux plan assertion hard-coded POSIX separators.
-Commit `298517d` corrects the fixtures/assertions, with no runtime source change.
-It also declares the exact authored TUI -> watcher status-read cross-link in
-`.importlinter`; the watcher reuses stamp commands, just as the previously
-sanctioned TUI -> command-context link does. No blanket exception or layer
-removal was introduced. All **6 import contracts pass**; local statement/branch
-coverage is **87.43%**, above the unchanged **85%** gate. Hosted backend rerun
-**42219373561 passed** on implementation commit `298517d`: Linux Python
-3.11–3.14, macOS/Windows Python 3.11 and 3.14, hooks/coverage, import contracts,
-secret/policy guards and installed CLI acceptance all passed. No GitHub
-release/tag was created.
-
-The separate **Droid Wiki Refresh** workflow fails because the Factory service
-returns **402 Payment Required: Organization does not have an active paid
-subscription**. This external billing boundary is deferred; no workflow was
-disabled and no billing/configuration mutation was attempted.
-
-**Next boundary:** install the published plugin 1.3.0 through the native host
-lifecycle, then prove installed/enabled records and live search. That installation,
-any real-root inline migration, and enabling the global watcher are NOT RUN in
-this release task. Physical Windows/macOS service execution is also NOT RUN.
-No bulk adoption, user-root migration or daemon installation was authorized here.
-
 
 Updated 2026-11-01 (America/Chicago). Operational handoff, not normative source.
 SPEC.md owns the contract; DECISIONS.md records ratified rationale. Source and
