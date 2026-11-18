@@ -1,17 +1,17 @@
 ---
-name: somnus-metadata
+name: somnus-frontmatter
 description: >-
-  Use the Somnus Metadata registry (somnus CLI or the somnus-metadata MCP server) to find,
+  Use the Somnus Frontmatter registry (somnus CLI or the somnus-frontmatter MCP server) to find,
   adopt, create, validate, and evolve documents and files. Use it proactively: search the
   registry before writing a new doc, spec, plan, decision, or runbook; adopt files the user
   wants tracked; and record header, lifecycle, and revision changes through its commands
-  instead of hand-editing metadata. Applies to any file type (Markdown, code, config, or a
-  sidecar for anything else) under a registered root.
+  instead of hand-editing the frontmatter block. Applies to any file type (Markdown, code,
+  config, or a sidecar for anything else) under a registered root.
 somnus:
   schema: "somnus://metadata/core/2.0.0"
   id: "urn:somnus:artifact:01a19a69-881a-7245-966c-ff3762ab3c0a"
-  revision: 5
-  title: "Somnus Metadata"
+  revision: 6
+  title: "Somnus Frontmatter"
   classification:
     category: "engineering"
     type: "report"
@@ -26,9 +26,9 @@ somnus:
       - target_ref: "urn:somnus:artifact:01a19a69-881a-7245-966c-ff3762ab3c0a"
         aspects: ["content"]
   time:
-    updated_at: "2026-11-06T08:17:31+00:00"
+    updated_at: "2026-11-18T01:01:29+00:00"
   names:
-    slug: "somnus-metadata"
+    slug: "somnus-frontmatter"
   knowledge:
     coverage: "artifact"
     subjects: ["urn:somnus:artifact:01a19a69-881a-7245-966c-ff3762ab3c0a"]
@@ -40,9 +40,9 @@ somnus:
     body_role: "narrative"
 ---
 
-# Somnus Metadata
+# Somnus Frontmatter
 
-Somnus Metadata gives every managed file one `somnus:` header, inside the file wherever the
+Somnus Frontmatter gives every managed file one `somnus:` block, inside the file wherever the
 format allows (Markdown frontmatter; a comment envelope in code, config, and build files,
 including `Dockerfile`, `Makefile`, `CODEOWNERS`, `.gitignore`, and shebang scripts;
 `metadata.somnus` in notebooks; opt-in `"$somnus"` in JSON). Only formats with no place for it
@@ -56,9 +56,12 @@ Three parts, one backend:
 - **The watcher** (`somnus watch`, installed 24/7 with `somnus daemon install`) stamps new
   files, records in-place edits as new revisions, and keeps the registry current. Check it
   with `daemon status` (MCP: `daemon` with `action: status`). It is not the MCP server.
+  Maintenance of the substrate itself is the
+  [somnus-frontmatter-maintain](../somnus-frontmatter-maintain/SKILL.md) skill's job.
 
-- **MCP server `somnus-metadata`**: one tool per command (`q`, `ls`, `check`, `stamp`, `new`,
-  `set`, `status`, `bump`, `index`, `stale`, ...). Tool results are the command's text or TSV.
+- **MCP server `somnus-frontmatter`**: one tool per command (`q`, `ls`, `check`, `stamp`,
+  `new`, `set`, `status`, `bump`, `index`, `stale`, ...). Tool results are the command's
+  text or TSV.
 - **CLI `somnus`** (alias `somnus-metadata`): identical commands and flags. Use it when you
   have a shell. Install with `pip install -U somnus-metadata` in a venv on PATH. Humans also
   get `somnus edit`, a terminal UI over the same registry.
@@ -67,14 +70,22 @@ The live cheat sheet is `somnus brief` (MCP: `brief`); the server's instructions
 
 ## Host-agnostic operating contract
 
-This skill is the shared usage layer for Factory Droid, Codex, Antigravity, OpenCode,
-and other compatible agents. No host owns the system. The separately installed Python
-package owns behavior; the plugin distributes this skill and registers host adapters.
+This skill is the shared usage layer for any agent that loads Agent Skills; no host owns the
+system. The separately installed Python package owns behavior; the `somnus-frontmatter` npm
+package distributes this skill (into `~/.agents/skills/`) and the Agent Plugin (into
+`~/.agents/plugins/somnus-frontmatter/`, or as a locally installed plugin directory). A host
+that loads Agent Plugins gets the `somnus-frontmatter` MCP server from the plugin's
+`mcp.json`; hosts without plugin support register MCP manually using the snippet printed by
+`somnus-frontmatter install`. Either way, MCP tools are the native tool surface — never
+drive the registry by shelling out to Python when the MCP tools are available, and never
+hand-edit the `somnus:` block. The Python backend is an implementation detail of the
+system, not a workflow agents should script around.
+
 Use the installed executable or MCP tools, not a developer checkout's source path.
-A source update is not an installed-backend update. A direct skill/MCP adapter is not
-a native plugin installation: check the host's installed/enabled plugin list separately.
-Neither installation record proves live use. Check the backend version and exercise the
-relevant tool; see setup for native versus compatibility installation.
+A source update is not an installed-backend update. A skill copy and an MCP entry are one
+distribution lane; neither proves the other. After changing packaged skills, re-run the
+plugin installer (`somnus-frontmatter install`) and `somnus-frontmatter doctor` on the
+machine that runs the agents.
 
 The skill supplies proactive retrieval and maintenance habits, not permission to modify
 unrelated files or mass-adopt a user's machine. Respect the current task and root exclusions.
@@ -94,14 +105,14 @@ unrelated files or mass-adopt a user's machine. Respect the current task and roo
 ## Rules that keep the registry true
 
 - Never invent IDs, dates, actors, licenses, evidence, or acceptance records. Tools fill them.
-- Never hand-edit the `somnus:` header. Use `set` for title, summary, purpose, classification
+- Never hand-edit the `somnus:` block. Use `set` for title, summary, purpose, classification
   (`category`, `type`, `role`, `scope`, `tags`), `access.visibility`, `ingestion.disposition`.
   Unknown fields are errors; tool-specific data goes under `extensions.<owner>`.
 - Lifecycle changes go through `status`, never by editing `lifecycle.status`.
 - Changed the body of an indexed file? Record it with `bump PATH --reason "..."`. Otherwise the
   next `index` opens a revision conflict. When `daemon status` shows the watcher running with
-  `revise = auto`, it records that revision itself after the file settles; bump anyway when you
-  want a reason on the record, and re-read a file before editing its envelope.
+  `revise = "auto"`, it records that revision itself after the file settles; bump anyway when you
+  want a reason on the record, and re-read a file before editing its block.
 - `role: normative` is intent, not acceptance. Only `authority.standing: accepted` is authoritative.
 - With MCP, **pass absolute paths**. Relative paths resolve from the server's directory.
 - **Use `tsv: true` for MCP queries and listings when an agent needs complete paths or fields.**
@@ -117,7 +128,7 @@ Review exclusions before broad adoption. An unmanaged file is discovered, not ye
 a search miss is not evidence of absence while the relevant root is unregistered or unmanaged.
 
 **Adopt an existing file (any type).**
-1. `stamp /abs/file` shows the header it would add (dry run).
+1. `stamp /abs/file` shows the block it would add (dry run).
 2. `stamp /abs/file --write` writes it (add `--type T --title "..."` to override inference).
    Only files without an embedded carrier get a `<file>.somnus.yaml` sidecar. Plain `.json`
    objects can carry `"$somnus"` instead with `--inline`.
@@ -126,7 +137,7 @@ a search miss is not evidence of absence while the relevant root is unregistered
    unmanaged sidecar-only hosts too, including JSON, text and binaries.
 
 For immutable originals, signed/hash-bound baselines, or live source, do not blindly stamp
-an inline envelope. The standard permits a sidecar even for supported source extensions;
+an inline block. The standard permits a sidecar even for supported source extensions;
 use a verified backend-owned preservation workflow, or leave that host untouched and report
 it. Never invent a sidecar payload or assume the CLI exposes a forced-sidecar flag.
 
@@ -149,7 +160,9 @@ transition lists the allowed next states. Superseding takes `--replacement URN`.
 
 **Keep it fresh.** `index` reconciles every registered root (incremental; `--full` re-reads).
 With the watcher running this happens continuously. Old sidecars for hosts that now have a
-carrier move inline with `migrate --inline /abs/root` (dry run) then `--write`.
+carrier move inline with `migrate --inline /abs/root` (dry run) then `--write`. Registry and
+watcher health, conflict triage, and incident handling live in the companion
+**somnus-frontmatter-maintain** skill.
 
 **Reason over the collection.** The registry is a graph, not just a search index. Before
 answering a design or "what do we know" question, pull the structure, then read the files:
@@ -173,5 +186,5 @@ it names the file, line, field, code, and usually the fix.
   the controlled values for types, statuses, and standing.
 - [references/recipes.md](references/recipes.md): fork, regions, migration, conflicts, and
   registry SQL.
-- [references/setup.md](references/setup.md): installing the backend, where each host keeps
-  this skill and the MCP entry, and troubleshooting.
+- [references/setup.md](references/setup.md): installing the backend, where the skills and
+  MCP entry live, and troubleshooting.

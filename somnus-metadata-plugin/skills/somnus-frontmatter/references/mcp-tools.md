@@ -2,7 +2,7 @@
 somnus:
   schema: "somnus://metadata/core/2.0.0"
   id: "urn:somnus:artifact:01a19a69-8828-754a-9252-818248ed7990"
-  revision: 3
+  revision: 4
   title: "MCP tool reference"
   classification:
     category: "engineering"
@@ -18,7 +18,7 @@ somnus:
       - target_ref: "urn:somnus:artifact:01a19a69-8828-754a-9252-818248ed7990"
         aspects: ["content"]
   time:
-    updated_at: "2026-11-06T08:17:31+00:00"
+    updated_at: "2026-11-18T01:01:29+00:00"
   names:
     slug: "mcp-tool-reference"
   knowledge:
@@ -33,7 +33,7 @@ somnus:
 ---
 # MCP tool reference
 
-The `somnus-metadata` MCP server (`somnus mcp`, stdio JSON-RPC) exposes 17 tools, one per
+The `somnus-frontmatter` MCP server (`somnus mcp`, stdio JSON-RPC) exposes 17 tools, one per
 non-interactive CLI command (`edit` and the long-running `watch` are excluded). Arguments mirror the CLI flags with `-` replaced by `_`. Every
 tool also accepts `tsv: true` for tab-separated output. Results are the command's text or
 TSV; a non-zero exit sets `isError` and the text ends with `[exit N]`.

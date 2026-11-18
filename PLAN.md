@@ -2,7 +2,7 @@
 somnus:
   schema: "somnus://metadata/core/2.0.0"
   id: "urn:somnus:artifact:01a19a67-78dc-7498-970f-47643c9ce413"
-  revision: 12
+  revision: 14
   title: "Somnus Metadata — Completion and Operator Integration Plan"
   classification:
     category: "operations"
@@ -18,7 +18,7 @@ somnus:
       - target_ref: "urn:somnus:artifact:01a19a67-78dc-7498-970f-47643c9ce413"
         aspects: ["content"]
   time:
-    updated_at: "2026-11-02T06:49:21+00:00"
+    updated_at: "2026-11-18T01:16:12+00:00"
   names:
     slug: "somnus-metadata-completion-and-operator-integration-plan"
   knowledge:
@@ -36,6 +36,45 @@ somnus:
 Updated 2026-11-01 (America/Chicago). Operational handoff, not normative source.
 SPEC.md owns the contract; DECISIONS.md records ratified rationale. Source and
 execution establish implementation and exercised behavior respectively.
+
+## Plugin repositioning — 2026-11-17
+
+The plugin at `somnus-metadata-plugin/` is now **somnus-frontmatter 2.0.0** — the
+host-agnostic Agent Plugin + Agent Skills distribution of the system. Per operator
+decision 2026-11-17: product/distribution rename only; `somnus:` blocks, SPEC URNs, the
+`somnus` CLI, PyPI `somnus-metadata`, `$SOMNUS_HOME/somnus.db`, and backend behavior are
+unchanged. New public shape: Agent Plugins (agent-plugins.org) 1.0.0 `plugin.json` +
+`mcp.json`, two skills — `somnus-frontmatter` (everyday registry use) and
+`somnus-frontmatter-maintain` (watcher/daemon, roots, conflicts, E_HOST, backups,
+upgrades) — and **one distribution lane**: `somnus-frontmatter install` copies skills to
+`~/.agents/skills/`, the plugin to `~/.agents/plugins/somnus-frontmatter/`, and upserts a
+`somnus-frontmatter` entry into `~/.agents/plugins/marketplace.json` (backup kept; foreign
+entries preserved; unparseable file refused). Host configs are never rewritten; hosts
+without Agent Plugins get a printed one-line MCP snippet. Deleted: `lib/hosts.mjs`
+(per-host direct adapters), `native/`, `.codex-plugin/`, `.factory-plugin/`, `scripts/`
+(`build-native` was broken in this checkout — `skills/` never existed in git), repo `.agents/`,
+`test/native-packaging.test.mjs`, `somnus-metadata-plugin.zip`. npm distribution becomes
+publish-ready (`private` removed, `files` = plugin manifest + mcp.json + bin + lib +
+skills + README, license `UNLICENSED`).
+
+Verified 2026-11-17: **16/16 tests pass** (`npm test`), `somnus check . --level semantic`
+0 errors, `npm pack --dry-run` 15 files / 25.9 kB, dry-run install against real `~/.agents`
+prints the full action plan, real `somnus-frontmatter install` completed (skills + plugin +
+marketplace upsert; mentat entry preserved), `doctor` exit 0 — backend 2.2.0, registry
+2155 artifacts, watcher `never ran` (warn only), both skills and the plugin match packaged
+bytes, MCP handshake `somnus --actor somnus-frontmatter mcp` serves **17 tools**. Backend
+reconciliation (`somnus index`) opened 0 conflicts and none of the plugin's paths are in
+the conflict set. The renamed skills were picked up live in-session by the harness.
+
+Not done / operator-owned: npm publish (npm is not authenticated on this host and no
+license was chosen — `license` is `UNLICENSED` in package.json pending an operator
+decision); the 1.x `somnus-metadata` MCP entries in host configs are orphaned but harmless
+(documented upgrade path in README); watcher remains uninstalled (`install --watch` is
+explicit); `HANDOFF.md` refreshed 2026-11-18. The 2.2.1 toolkit release (restore of the
+be7b457-reverted version strings) completed the same day: published to PyPI as
+somnus-metadata 2.2.1, fresh no-cache install from the public index verified, global
+`~/.venvs/global` upgraded, 579/579 tests, acceptance 77/77, tag `v2.2.1` pushed to trigger
+the GitHub Release workflow.
 
 ## Production payload correction — 2026-11-02
 

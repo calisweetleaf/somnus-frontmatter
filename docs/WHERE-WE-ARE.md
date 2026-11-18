@@ -2,7 +2,7 @@
 somnus:
   schema: "somnus://metadata/core/2.0.0"
   id: "urn:somnus:artifact:01a1aff0-60c9-76b6-95b0-38b2a057b562"
-  revision: 2
+  revision: 3
   title: "Where somnus-metadata stands"
   classification:
     category: "engineering"
@@ -18,7 +18,7 @@ somnus:
       - target_ref: "urn:somnus:artifact:01a1aff0-60c9-76b6-95b0-38b2a057b562"
         aspects: ["content"]
   time:
-    updated_at: "2026-11-06T23:30:25+00:00"
+    updated_at: "2026-11-18T01:16:13+00:00"
   names:
     slug: "where-somnus-metadata-stands"
   knowledge:
@@ -33,9 +33,9 @@ somnus:
 ---
 # Where somnus-metadata stands
 
-> A plain account of what the system is, which parts are finished, and the remaining publication steps for toolkit 2.2.1. Read this first if you are coming back to the project, or handing it to someone else.
+> A plain account of what the system is, which parts are finished, and the publication state of toolkit 2.2.1 (published 2026-11-17/18). Read this first if you are coming back to the project, or handing it to someone else.
 
-**Source toolkit:** 2.2.1 (`pyproject.toml`) · **Metadata core:** 2.0.0 · **Latest verified on PyPI:** 2.2.0
+**Source toolkit:** 2.2.1 (`pyproject.toml`) · **Metadata core:** 2.0.0 · **Latest verified on PyPI:** 2.2.1
 
 ## The system in one picture
 
@@ -103,30 +103,28 @@ This section lists the checks that were run on this tree and what each one prove
 
 Hosted CI passes on Linux, macOS and Windows. Physical service installation on the laptop and a physical Windows console have not been exercised in this cloud session.
 
-## Current release and remaining publication
+## Current release and publication state
 
-The D20 backend and plugin 1.3.0 are merged. D20 is ratified in DECISIONS.md.
-Toolkit 2.2.0 is published on PyPI. The supplied revision correction targets
-2.2.1 because published versions cannot be overwritten. Metadata core stays
-2.0.0. The plugin remains a separate private repository.
+The D20 backend is merged and ratified in DECISIONS.md. D20 ships to PyPI as
+**2.2.1**, published 2026-11-18 (the be7b457 commit had accidentally reverted
+the 2.2.1 version strings without touching code; the 2.2.1 sources from
+4e69a0d are unchanged). The correction restores the isolated heartbeat module,
+missing filename mappings, inline metadata in five repository configuration
+files, and this handoff. Metadata core stays 2.0.0. The agent-facing plugin is
+now **somnus-frontmatter 2.0.0** in this repository (host-agnostic Agent
+Plugin; see `PLAN.md` for its 2026-11-17 entry); the plugin work is not on
+PyPI (it is an npm package and is not yet published to npm).
 
-The correction restores the isolated heartbeat module, missing filename mappings,
-inline metadata in five repository configuration files, and this handoff.
-The migration payload mapper is split by the SPEC section 22 field families;
-unknown legacy values remain in the migration extension.
+Release evidence: 579/579 unit tests; `check SPEC.md DECISIONS.md --level
+semantic` 0/0; mypy clean (56 files); strict twine metadata checks passed for
+both artifacts; fresh wheel acceptance 77/77; PyPI JSON digests for the wheel
+and sdist match the local builds; fresh no-cache install from the public index
+reports `somnus 2.2.1`; the global `~/.venvs/global` install was upgraded to
+2.2.1 and `somnus-frontmatter doctor` passes with a live MCP handshake.
+`v2.2.1` is tagged; the tag workflow creates the GitHub Release (it does not
+publish to PyPI).
 
-Finish publication from an environment with the authorized PyPI publisher:
-
-1. Check out current `main` and run the gates in the release runbook.
-2. Build and inspect a wheel and source archive for **2.2.1**.
-3. Run strict Twine checks and upload those exact artifacts using the existing
-   credential store. Never put a token into source, chat or command arguments.
-4. Verify public artifact hashes and a fresh installation from PyPI.
-5. Tag the accepted commit as `v2.2.1`; the existing tag workflow creates a
-   GitHub Release, but does not publish to PyPI.
-
-The cloud workspace has no PyPI publishing credentials, and the connected laptop
-is offline. **2.2.1 is not yet published.** The authoritative procedure is
+The authoritative procedure remains
 [runbooks/package-release.md](../runbooks/package-release.md).
 
 A source merge or package upload does not install or enable the native plugin,

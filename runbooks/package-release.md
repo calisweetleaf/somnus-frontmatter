@@ -2,7 +2,7 @@
 somnus:
   schema: "somnus://metadata/core/2.0.0"
   id: "urn:somnus:artifact:01a19a67-7c9e-74d4-9f7e-712091342607"
-  revision: 2
+  revision: 3
   title: "Package release and installation"
   classification:
     category: "engineering"
@@ -18,7 +18,7 @@ somnus:
       - target_ref: "urn:somnus:artifact:01a19a67-7c9e-74d4-9f7e-712091342607"
         aspects: ["content"]
   time:
-    updated_at: "2026-11-02T04:45:31+00:00"
+    updated_at: "2026-11-18T01:16:13+00:00"
   names:
     slug: "package-release-and-installation"
   knowledge:
@@ -37,7 +37,7 @@ somnus:
 
 - Package index: PyPI, https://pypi.org/project/somnus-metadata/
 - Distribution: somnus-metadata. Python package and console command: somnus.
-- Current source toolkit version: 2.1.0 (registry schema 2, D19); latest published PyPI release: 2.0.0; metadata core is 2.0.0.
+- Current source toolkit version: 2.2.1; latest published PyPI release: 2.2.1; metadata core is 2.0.0.
 - The first 0.1.0 upload was a stale-metadata versioning error, not v1 canon.
 - PyPI project owner observed after publication: somnus.
 - Do not publish as somnus: that PyPI name belongs to an unrelated project.
@@ -87,6 +87,27 @@ The existing release.yml is a GitHub Release workflow, NOT an automatic PyPI
 publisher. Trusted Publishing is a possible later improvement requiring the
 actual PyPI/GitHub publisher binding; its existence is not implied here.
 Keep future dev/build dependency updates at least seven days old per CONTRIBUTING.
+
+## 2.2.1 publication (2026-11-18)
+
+The 2.2.1 sources (isolated heartbeat module, filename carrier mappings, inline
+toolkit metadata) were prepared in commit 4e69a0d ("PyPI publication remains
+pending publisher access"); the be7b457 documentation-consolidation commit then
+reverted the version strings to 2.2.0 without touching code. The revert was
+undone (version restored to 2.2.1 in pyproject.toml and somnus/__init__.py).
+
+Gates rerun from current `main` after restore: 579/579 unit tests; SPEC and
+DECISIONS semantic check 0 errors/0 warnings; mypy clean (56 files); build with
+`uv build --no-sources` produced both artifacts; strict twine check passed; the
+exact built wheel passed installed-package acceptance 77/77; no operator, research
+or archive material in either artifact (sdist 78 entries, wheel 63, SQL schemas
+packaged). Uploaded with the existing credential store:
+https://pypi.org/project/somnus-metadata/2.2.1/. PyPI JSON digests for wheel
+and sdist match the local dist/ files; fresh no-cache install from the public
+index reports `somnus 2.2.1`; `~/.venvs/global` was upgraded to 2.2.1 and
+`somnus-frontmatter doctor` passes against it (17 MCP tools). Tag `v2.2.1`
+pushed; the release workflow creates the GitHub Release (it does not publish
+to PyPI).
 
 ## 2.1.1 all-file discovery repair (2026-11-01 America/Chicago)
 

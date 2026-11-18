@@ -2,7 +2,7 @@
 somnus:
   schema: "somnus://metadata/core/2.0.0"
   id: "urn:somnus:artifact:01a19a67-78be-745c-b7a2-ded39bc0328a"
-  revision: 10
+  revision: 12
   title: "HANDOFF — finish Somnus Metadata end to end (2026-11-01)"
   classification:
     category: "engineering"
@@ -18,7 +18,7 @@ somnus:
       - target_ref: "urn:somnus:artifact:01a19a67-78be-745c-b7a2-ded39bc0328a"
         aspects: ["content"]
   time:
-    updated_at: "2026-11-06T06:13:47+00:00"
+    updated_at: "2026-11-18T01:16:12+00:00"
   names:
     slug: "handoff-finish-somnus-metadata-end-to-end-2026-11-01"
   knowledge:
@@ -32,6 +32,45 @@ somnus:
     body_role: "narrative"
 ---
 # HANDOFF — finish Somnus Metadata end to end (2026-11-01)
+
+## 2026-11-17 — toolkit 2.2.1 restored; plugin repositioned as somnus-frontmatter 2.0.0
+
+**2.2.1 publication restore (backend).** `be7b457` (2026-11-11, docs consolidation)
+accidentally reverted `pyproject.toml` and `src/somnus/__init__.py` from toolkit
+2.2.1 to 2.2.0 without touching code; the heartbeat/watcher sources from `4e69a0d`
+were otherwise retained, and the 579-test suite was still the green D20 state. The
+version strings are restored to 2.2.1 and re-bumped. Gates: 579/579 unit tests OK;
+`check SPEC.md DECISIONS.md --level semantic` 0 errors/0 warnings; mypy clean
+(56 files). Publication per `docs/WHERE-WE-ARE.md` and
+[runbooks/package-release.md](runbooks/package-release.md), **completed 2026-11-18**:
+build OK; strict twine check PASSED; exact-wheel acceptance 77/77; both artifacts
+uploaded (https://pypi.org/project/somnus-metadata/2.2.1/); PyPI JSON digests match
+local builds; fresh no-cache install reports `somnus 2.2.1`; `~/.venvs/global`
+upgraded to 2.2.1; `somnus-frontmatter doctor` green (17 MCP tools). Tagged `v2.2.1`;
+the tag workflow creates a GitHub Release (it does NOT publish to PyPI).
+
+**somnus-frontmatter 2.0.0 (plugin).** `somnus-metadata-plugin/` is repositioned as
+the host-agnostic Agent Plugin distribution (agent-plugins.org 1.0.0): skills
+`somnus-frontmatter` + `somnus-frontmatter-maintain`, `plugin.json` + `mcp.json`,
+one lane — `somnus-frontmatter install` populates `~/.agents/skills/` and
+`~/.agents/plugins/somnus-frontmatter/` with a marketplace upsert; host configs are
+never rewritten. Per-host adapters (`lib/hosts.mjs`), native Codex/Factory payloads,
+`native/`, `scripts/build-native.mjs`, and the repo-local `.agents/` are gone.
+16/16 tests pass; real install into `~/.agents/` done; `doctor` green with a live
+MCP handshake (17 tools). npm publish (`npm publish` in the subdirectory) is not
+possible from the development host (npm registry returns 401); package is
+publish-ready with `UNLICENSED` pending an operator license decision.
+
+**Stale by design:** `docs/`, `wiki/` and `ARCHITECTURE.md` still describe the
+1.x plugin and private `calisweetleaf/somnus-metadata-plugin` repo; refreshing
+them is a documentation-pass job, not part of either release.
+
+**Pending release follow-through:** commit the somnus-frontmatter 2.0.0 move and
+the 2.2.1 restore, push `main`, tag `v2.2.1` (tag workflow creates the GitHub
+Release), and record the commit hash here and in PLAN.md. npm publish of
+`somnus-frontmatter` remains blocked on this host (npm registry returns 401);
+the package is publish-ready with `UNLICENSED` pending an operator license
+decision.
 
 ## D20: universal embedded carriers and the 24/7 watcher — 2026-11-05 (2.2.0, unreleased)
 

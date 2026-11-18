@@ -2,7 +2,7 @@
 // somnus:
 //   schema: "somnus://metadata/core/2.0.0"
 //   id: "urn:somnus:artifact:01a19a69-87dd-718d-998f-06f9d6eed395"
-//   revision: 3
+//   revision: 4
 //   title: "Cli"
 //   classification:
 //     category: "engineering"
@@ -18,7 +18,7 @@
 //       - target_ref: "urn:somnus:artifact:01a19a69-87dd-718d-998f-06f9d6eed395"
 //         aspects: ["content"]
 //   time:
-//     updated_at: "2026-11-06T08:17:30+00:00"
+//     updated_at: "2026-11-18T01:01:32+00:00"
 //   names:
 //     slug: "cli"
 //   knowledge:
@@ -36,36 +36,36 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { MIN_BACKEND, atLeast, backendVersion, installBackend, mcpHandshake, resolveSomnus } from './backend.mjs';
-import { HOSTS, hostFor } from './hosts.mjs';
-import { PLUGIN_NAME, PLUGIN_VERSION, PluginError, UsageError, ownedBy } from './util.mjs';
+import { installAgents, inspectAgents, installedMcpServer, uninstallAgents } from './agents.mjs';
+import { PLUGIN_NAME, PLUGIN_VERSION, PluginError, UsageError } from './util.mjs';
 
-const USAGE = `usage: somnus-plugin <command> [options]
+const AGENTS_ENV = 'SOMNUS_FRONTMATTER_AGENTS';
+const USAGE = `usage: somnus-frontmatter <command> [options]
 
 commands:
-  install     install direct skill/MCP adapters (not native plugin registration)
-  uninstall   remove what install added (config backups are kept)
-  doctor      check direct adapters: backend, registry, skill fidelity and MCP handshake
-  hosts       list supported hosts and direct-adapter readiness
+  install     skills into ~/.agents/skills/, Agent Plugin into ~/.agents/plugins/
+  uninstall   remove what install added (backend and registry stay)
+  doctor      backend, registry, watcher, skill/plugin fidelity, live MCP handshake
+  help        show this help
 
 options:
-  --host LIST            comma-separated subset of: ${Object.keys(HOSTS).join(', ')} (default: every host present)
-  --somnus PATH          somnus executable to register (default: found on PATH or ~/.local/bin)
-  --install-backend SRC  first install or upgrade SRC with 'pip install --upgrade' (then uv tool,
-                         then pipx, if pip is missing or refused); SRC is a PyPI name such as
-                         somnus-metadata or a source checkout path
-  --watch                install: also register the 24/7 watcher as a user service
-                         ('somnus daemon install'; needs somnus 2.2.0 or newer)
-  --force                replace a skill or plugin directory this tool did not create
-  --dry-run              print the actions without changing anything
-  --home DIR             use DIR as the home directory
+  --agents-dir DIR  agents home (default: ${AGENTS_ENV} or ~/.agents)
+  --home DIR        home directory for somnus resolution (default: the OS home)
+  --somnus PATH     somnus executable to use (default: found on PATH or ~/.local/bin)
+  --install-backend SRC  install or upgrade the backend first: pip install --upgrade SRC,
+                       then uv tool, then pipx, if pip is missing or refused (PEP 668);
+                       SRC is a PyPI name such as somnus-metadata or a source checkout path
+  --watch           install: also register the 24/7 watcher ('somnus daemon install'; needs somnus 2.2.0+)
+  --force           replace directories this tool did not create
+  --dry-run         print the actions without changing anything
 `;
 
-const FLAGS = { '--host': 'hosts', '--somnus': 'somnus', '--install-backend': 'installBackend', '--home': 'home' };
+const FLAGS = { '--agents-dir': 'agentsDir', '--somnus': 'somnus', '--install-backend': 'installBackend', '--home': 'home' };
 const SWITCHES = { '--force': 'force', '--dry-run': 'dryRun', '--watch': 'watch' };
 const WATCH_BACKEND = [2, 2, 0];
 
 export function parse(argv) {
-  const opts = { command: null, hosts: null, somnus: null, installBackend: null, home: null, force: false, dryRun: false, watch: false };
+  const opts = { command: null, agentsDir: null, somnus: null, installBackend: null, home: null, force: false, dryRun: false, watch: false };
   for (let i = 0; i < argv.length; i += 1) {
     const [flag, inline] = argv[i].startsWith('--') ? argv[i].split(/=(.*)/s) : [argv[i]];
     if (flag in SWITCHES) {
@@ -82,19 +82,11 @@ export function parse(argv) {
       throw new UsageError(`unknown argument: ${argv[i]}`);
     }
   }
-  if (opts.hosts !== null) {
-    opts.hosts = opts.hosts.split(',').map((h) => h.trim()).filter(Boolean);
-    const unknown = opts.hosts.filter((h) => !(h in HOSTS));
-    if (unknown.length) throw new UsageError(`unknown host(s): ${unknown.join(', ')}; choose from ${Object.keys(HOSTS).join(', ')}`);
-  }
   return opts;
 }
 
-function selectHosts(opts, ctx) {
-  if (opts.hosts) return opts.hosts;
-  const present = Object.keys(HOSTS).filter((name) => fs.existsSync(hostFor(name, ctx).root));
-  if (!present.length) throw new PluginError(`no supported agent host found under ${ctx.home}; name one with --host`);
-  return present;
+function agentsDirOf(opts) {
+  return path.resolve(opts.agentsDir ?? process.env[AGENTS_ENV] ?? path.join(opts.home ? path.resolve(opts.home) : os.homedir(), '.agents'));
 }
 
 function requireBackend(opts, ctx, out) {
@@ -131,6 +123,16 @@ function installWatcher(somnus, opts, ctx, out) {
   if (run.status !== 0) throw new PluginError(`'somnus ${args.join(' ')}' exited ${run.status}`);
 }
 
+function registryLine(somnus, env) {
+  const run = spawnSync(somnus, ['ls', '--tsv'], { encoding: 'utf8', timeout: 30_000, env });
+  if (run.status === 0) {
+    const count = Math.max(0, run.stdout.trim().split('\n').length - 1);
+    return ['ok  ', `registry: ${count} managed artifact(s) present`];
+  }
+  const reason = `${run.stdout}${run.stderr}`.trim().split('\n')[0] || `exit ${run.status}`;
+  return ['warn', `registry: ${reason}`];
+}
+
 function watcherLine(somnus, version, env) {
   if (!atLeast(version, WATCH_BACKEND)) {
     return ['warn', `watcher: needs somnus ${WATCH_BACKEND.join('.')}+ (have ${version.join('.')})`];
@@ -142,37 +144,22 @@ function watcherLine(somnus, version, env) {
     return ['ok  ', `watcher: running (pid ${fields.pid}; stamped ${fields.stamped}, revised ${fields.revised}, errors ${fields.errors})`];
   }
   const why = fields.state ? 'stopped' : 'never ran';
-  return ['warn', `watcher: ${why}; 'somnus daemon install' (or 'somnus-plugin install --watch') runs it 24/7`];
+  return ['warn', `watcher: ${why}; 'somnus daemon install' (or 'somnus-frontmatter install --watch') runs it 24/7`];
 }
 
 function install(opts, ctx, out) {
   const somnus = requireBackend(opts, ctx, out);
-  for (const name of selectHosts(opts, ctx)) {
-    out(`[${name}]`);
-    hostFor(name, ctx).install(somnus, { force: opts.force, dryRun: opts.dryRun, log: (m) => out(`  ${m}`) });
-  }
+  const agentsDir = agentsDirOf(opts);
+  installAgents({ agentsDir, force: opts.force, dryRun: opts.dryRun, log: out });
   if (opts.watch) installWatcher(somnus, opts, ctx, out);
-  out(opts.dryRun ? 'dry run: nothing changed' : "done; run 'somnus-plugin doctor', then restart each agent host");
+  out(opts.dryRun ? 'dry run: nothing changed' : "done; run 'somnus-frontmatter doctor', then restart your agent");
   return 0;
 }
 
 function uninstall(opts, ctx, out) {
-  for (const name of selectHosts(opts, ctx)) {
-    out(`[${name}]`);
-    hostFor(name, ctx).uninstall({ dryRun: opts.dryRun, log: (m) => out(`  ${m}`) });
-  }
-  out(opts.dryRun ? 'dry run: nothing changed' : 'done; the somnus backend and registry were left in place');
+  const agentsDir = agentsDirOf(opts);
+  uninstallAgents({ agentsDir, dryRun: opts.dryRun, log: out });
   return 0;
-}
-
-function registryLine(somnus, env) {
-  const run = spawnSync(somnus, ['ls', '--tsv'], { encoding: 'utf8', timeout: 30_000, env });
-  if (run.status === 0) {
-    const count = Math.max(0, run.stdout.trim().split('\n').length - 1);
-    return ['ok  ', `registry: ${count} managed artifact(s) present`];
-  }
-  const reason = `${run.stdout}${run.stderr}`.trim().split('\n')[0] || `exit ${run.status}`;
-  return ['warn', `registry: ${reason}`];
 }
 
 async function doctor(opts, ctx, out) {
@@ -181,6 +168,7 @@ async function doctor(opts, ctx, out) {
     if (status === 'FAIL') problems += 1;
     out(`${status} ${text}`);
   };
+  const agentsDir = agentsDirOf(opts);
   const somnus = resolveSomnus(opts.somnus, ctx.home, ctx.env.PATH);
   const version = somnus ? backendVersion(somnus, ctx.env) : null;
   if (!version) {
@@ -193,42 +181,23 @@ async function doctor(opts, ctx, out) {
     report(...registryLine(somnus, ctx.env));
     report(...watcherLine(somnus, version, ctx.env));
   }
-  for (const name of selectHosts(opts, ctx)) {
-    const host = hostFor(name, ctx);
-    const marker = ownedBy(host.skill);
-    if (!marker) {
-      report('FAIL', `${name}: skill missing at ${host.skill}`);
-    } else {
-      const stale = host.drift ? host.drift() : null;
-      report(stale ? 'FAIL' : 'ok  ', `${name}: skill ${marker.version ?? '?'} at ${host.skill}`
-        + (stale ? `: ${stale}` : ' matches the packaged skill'));
-    }
-    const entry = host.entry();
-    if (!entry) {
-      report('FAIL', `${name}: no ${PLUGIN_NAME} MCP entry in ${host.config}`);
-      continue;
-    }
-    const shake = await mcpHandshake(entry.command, entry.args, { env: ctx.env });
-    const commandLine = [entry.command, ...entry.args].join(' ');
+  for (const finding of inspectAgents({ agentsDir })) report(finding.status, finding.text);
+  const declared = installedMcpServer({ agentsDir });
+  if (!declared) {
+    report('FAIL', `plugin at ${agentsDir}/plugins/somnus-frontmatter declares no usable MCP server`);
+  } else {
+    const command = declared.command === 'somnus' ? (resolveSomnus(opts.somnus, ctx.home, ctx.env.PATH) ?? declared.command) : declared.command;
+    const shake = await mcpHandshake(command, declared.args, { env: ctx.env });
+    const commandLine = [command, ...declared.args].join(' ');
     report(shake.ok ? 'ok  ' : 'FAIL', shake.ok
-      ? `${name}: MCP '${commandLine}' serves ${shake.tools.length} tools (${shake.serverInfo?.name ?? '?'} ${shake.serverInfo?.version ?? '?'})`
-      : `${name}: MCP '${commandLine}' failed: ${shake.error}`);
+      ? `MCP '${commandLine}' serves ${shake.tools.length} tools (${shake.serverInfo?.name ?? '?'} ${shake.serverInfo?.version ?? '?'})`
+      : `MCP '${commandLine}' failed: ${shake.error}`);
   }
-  out(problems ? `${problems} problem(s); 'somnus-plugin install' repairs host entries` : 'all checks passed');
+  out(problems ? `${problems} problem(s); 'somnus-frontmatter install' repairs the agent entries` : 'all checks passed');
   return problems ? 1 : 0;
 }
 
-function listHosts(opts, ctx, out) {
-  for (const name of Object.keys(HOSTS)) {
-    const host = hostFor(name, ctx);
-    const present = fs.existsSync(host.root);
-    const installed = Boolean(ownedBy(host.skill) && host.entry());
-    out(`${name.padEnd(12)} ${host.label.padEnd(20)} ${present ? 'present' : 'absent '}  ${installed ? 'adapter-ready' : '-'}  ${host.root}`);
-  }
-  return 0;
-}
-
-const COMMANDS = { install, uninstall, doctor, hosts: listHosts };
+const COMMANDS = { install, uninstall, doctor };
 
 export async function main(argv, { out = console.log, err = console.error, env = process.env } = {}) {
   try {
@@ -239,12 +208,12 @@ export async function main(argv, { out = console.log, err = console.error, env =
     }
     const command = COMMANDS[opts.command];
     if (!command) throw new UsageError(`unknown command: ${opts.command}`);
-    const ctx = { home: path.resolve(opts.home ?? os.homedir()), env };
+    const ctx = { home: path.resolve(opts.home ?? os.homedir()), agentsDir: opts.agentsDir, env };
     return await command(opts, ctx, out);
   } catch (error) {
     if (!(error instanceof PluginError)) throw error;
-    err(`somnus-plugin: ${error.message}`);
-    if (error instanceof UsageError) err("run 'somnus-plugin help' for usage");
+    err(`somnus-frontmatter: ${error.message}`);
+    if (error instanceof UsageError) err("run 'somnus-frontmatter help' for usage");
     return error instanceof UsageError ? 2 : 1;
   }
 }

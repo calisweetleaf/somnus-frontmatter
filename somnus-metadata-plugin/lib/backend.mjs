@@ -2,7 +2,7 @@
 // somnus:
 //   schema: "somnus://metadata/core/2.0.0"
 //   id: "urn:somnus:artifact:01a19a69-87cf-7035-95fe-c30071fd0266"
-//   revision: 1
+//   revision: 2
 //   title: "Backend"
 //   classification:
 //     category: "engineering"
@@ -17,7 +17,8 @@
 //     scopes:
 //       - target_ref: "urn:somnus:artifact:01a19a69-87cf-7035-95fe-c30071fd0266"
 //         aspects: ["content"]
-//   time: {}
+//   time:
+//     updated_at: "2026-11-18T01:01:32+00:00"
 //   names:
 //     slug: "backend"
 //   knowledge:
@@ -153,7 +154,7 @@ export function mcpHandshake(command, args, { timeoutMs = 30_000, env } = {}) {
     const send = (message) => child.stdin.write(`${JSON.stringify(message)}\n`);
     send({
       jsonrpc: '2.0', id: 1, method: 'initialize',
-      params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'somnus-plugin', version: PLUGIN_VERSION } },
+      params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'somnus-frontmatter', version: PLUGIN_VERSION } },
     });
     send({ jsonrpc: '2.0', method: 'notifications/initialized' });
     send({ jsonrpc: '2.0', id: 2, method: 'tools/list' });

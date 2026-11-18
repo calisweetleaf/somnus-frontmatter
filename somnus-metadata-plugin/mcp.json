@@ -1,12 +1,12 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
   "mcpServers": {
-    "somnus-metadata": {
+    "somnus-frontmatter": {
       "type": "stdio",
       "command": "somnus",
       "args": [
         "--actor",
-        "somnus-metadata-plugin",
+        "somnus-frontmatter",
         "mcp"
       ]
     }

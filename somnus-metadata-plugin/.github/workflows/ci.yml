@@ -2,7 +2,7 @@
 # somnus:
 #   schema: "somnus://metadata/core/2.0.0"
 #   id: "urn:somnus:artifact:01a19a69-8791-7252-937f-b62ea38dcaa5"
-#   revision: 1
+#   revision: 2
 #   title: "Ci"
 #   classification:
 #     category: "engineering"
@@ -17,7 +17,8 @@
 #     scopes:
 #       - target_ref: "urn:somnus:artifact:01a19a69-8791-7252-937f-b62ea38dcaa5"
 #         aspects: ["content"]
-#   time: {}
+#   time:
+#     updated_at: "2026-11-18T01:01:32+00:00"
 #   names:
 #     slug: "ci"
 #   knowledge:
@@ -64,4 +65,6 @@ jobs:
       - name: Unit tests (no dependencies to install)
         run: npm test
       - name: CLI starts and prints usage
-        run: node bin/somnus-plugin.mjs help
+        run: node bin/somnus-frontmatter.mjs help
+      - name: Package tarball contents are sane
+        run: npm pack --dry-run

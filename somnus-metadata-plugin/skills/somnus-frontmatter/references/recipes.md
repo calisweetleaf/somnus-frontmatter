@@ -2,7 +2,7 @@
 somnus:
   schema: "somnus://metadata/core/2.0.0"
   id: "urn:somnus:artifact:01a19a69-8838-72f8-b84b-a5aed33310c5"
-  revision: 1
+  revision: 2
   title: "Somnus Metadata recipes"
   classification:
     category: "engineering"
@@ -17,9 +17,10 @@ somnus:
     scopes:
       - target_ref: "urn:somnus:artifact:01a19a69-8838-72f8-b84b-a5aed33310c5"
         aspects: ["content"]
-  time: {}
+  time:
+    updated_at: "2026-11-18T01:01:29+00:00"
   names:
-    slug: "somnus-metadata-recipes"
+    slug: "somnus-frontmatter-recipes"
   knowledge:
     coverage: "artifact"
     subjects: ["urn:somnus:artifact:01a19a69-8838-72f8-b84b-a5aed33310c5"]

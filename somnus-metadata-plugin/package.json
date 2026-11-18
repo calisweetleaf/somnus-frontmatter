@@ -1,34 +1,36 @@
 {
-  "name": "somnus-metadata-plugin",
-  "version": "1.3.0",
-  "private": true,
-  "description": "Installs the Somnus Metadata skill and MCP server into agent hosts: Factory Droid, Codex, Google Antigravity, and OpenCode.",
+  "name": "somnus-frontmatter",
+  "version": "2.0.0",
+  "description": "Host-agnostic Agent Plugin and skills for Somnus Frontmatter: installs the local-first registry, search and revision workflows for coding agents into ~/.agents/ and prints the MCP wiring for any agent.",
+  "license": "UNLICENSED",
   "type": "module",
   "bin": {
-    "somnus-plugin": "bin/somnus-plugin.mjs"
+    "somnus-frontmatter": "bin/somnus-frontmatter.mjs"
   },
   "files": [
     "plugin.json",
     "mcp.json",
-    ".codex-plugin",
-    ".factory-plugin",
-    ".agents",
     "bin",
     "lib",
     "skills",
-    "README.md",
-    "native",
-    "scripts"
+    "README.md"
   ],
   "engines": {
     "node": ">=18.17"
   },
+  "keywords": [
+    "agent-skills",
+    "agent-plugins",
+    "mcp",
+    "somnus",
+    "frontmatter"
+  ],
   "scripts": {
-    "build:native": "node scripts/build-native.mjs",
-    "test": "node scripts/build-native.mjs --check && node --test test/*.test.mjs"
+    "test": "node --test test/*.test.mjs"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/calisweetleaf/somnus-metadata-plugin.git"
+    "url": "git+https://github.com/calisweetleaf/somnus-metadata.git",
+    "directory": "somnus-metadata-plugin"
   }
 }

@@ -3,7 +3,7 @@
 // somnus:
 //   schema: "somnus://metadata/core/2.0.0"
 //   id: "urn:somnus:artifact:01a19a69-87c1-749d-ae00-2a30624a6c84"
-//   revision: 1
+//   revision: 2
 //   title: "Somnus Plugin"
 //   classification:
 //     category: "engineering"
@@ -18,9 +18,10 @@
 //     scopes:
 //       - target_ref: "urn:somnus:artifact:01a19a69-87c1-749d-ae00-2a30624a6c84"
 //         aspects: ["content"]
-//   time: {}
+//   time:
+//     updated_at: "2026-11-18T01:01:32+00:00"
 //   names:
-//     slug: "somnus-plugin"
+//     slug: "somnus-frontmatter"
 //   knowledge:
 //     coverage: "artifact"
 //     subjects: ["urn:somnus:artifact:01a19a69-87c1-749d-ae00-2a30624a6c84"]
@@ -33,7 +34,7 @@
 // somnus:end
 import { main } from '../lib/cli.mjs';
 
-// A closed pipe (`somnus-plugin doctor | head`) is not a failure of the command.
+// A closed pipe (`somnus-frontmatter doctor | head`) is not a failure of the command.
 process.stdout.on('error', (err) => {
   if (err.code === 'EPIPE') process.exit(process.exitCode ?? 0);
   throw err;

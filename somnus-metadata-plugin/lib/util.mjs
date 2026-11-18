@@ -2,7 +2,7 @@
 // somnus:
 //   schema: "somnus://metadata/core/2.0.0"
 //   id: "urn:somnus:artifact:01a19a69-87fe-7413-9fd4-54d4b1afe41a"
-//   revision: 1
+//   revision: 2
 //   title: "Util"
 //   classification:
 //     category: "engineering"
@@ -17,7 +17,8 @@
 //     scopes:
 //       - target_ref: "urn:somnus:artifact:01a19a69-87fe-7413-9fd4-54d4b1afe41a"
 //         aspects: ["content"]
-//   time: {}
+//   time:
+//     updated_at: "2026-11-18T01:01:31+00:00"
 //   names:
 //     slug: "util"
 //   knowledge:
@@ -40,9 +41,10 @@ export class PluginError extends Error {}
 /** A malformed command line. */
 export class UsageError extends PluginError {}
 
-export const SERVER_NAME = 'somnus-metadata';
-export const SKILL_NAME = 'somnus-metadata';
-export const MARKER = '.somnus-plugin.json';
+export const SERVER_NAME = 'somnus-frontmatter';
+export const SKILL_NAMES = ['somnus-frontmatter', 'somnus-frontmatter-maintain'];
+export const PLUGIN_DIR_NAME = 'somnus-frontmatter';
+export const MARKER = '.somnus-frontmatter.json';
 
 const PKG = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 export const PLUGIN_NAME = PKG.name;
@@ -70,15 +72,15 @@ export function writeAtomic(file, text) {
   } catch {
     // new file
   }
-  const tmp = `${file}.${process.pid}.somnus-plugin.tmp`;
+  const tmp = `${file}.${process.pid}.somnus-frontmatter.tmp`;
   fs.writeFileSync(tmp, text, { mode });
   fs.renameSync(tmp, file);
 }
 
-/** Copy an existing file to `<file>.bak-somnus-plugin-<UTC stamp>`; return the copy's path. */
+/** Copy an existing file to `<file>.bak-somnus-frontmatter-<UTC stamp>`; return the copy's path. */
 export function backup(file) {
   if (!fs.existsSync(file)) return null;
-  const dest = `${file}.bak-somnus-plugin-${timestamp()}`;
+  const dest = `${file}.bak-somnus-frontmatter-${timestamp()}`;
   fs.copyFileSync(file, dest);
   return dest;
 }
