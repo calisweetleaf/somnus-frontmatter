@@ -2,7 +2,7 @@
 # somnus:
 #   schema: "somnus://metadata/core/2.0.0"
 #   id: "urn:somnus:artifact:01a1af7c-0a93-7715-b17d-9eed021e4f98"
-#   revision: 1
+#   revision: 2
 #   title: "Carrier routing beyond extensions, JSON-tree carriers, and inline migration (SPEC §17, D20)"
 #   classification:
 #     category: "engineering"
@@ -17,7 +17,8 @@
 #     scopes:
 #       - target_ref: "urn:somnus:artifact:01a1af7c-0a93-7715-b17d-9eed021e4f98"
 #         aspects: ["content"]
-#   time: {}
+#   time:
+#     updated_at: "2026-11-18T01:21:12+00:00"
 #   names:
 #     slug: "carrier-routing-beyond-extensions-json-tree-carriers-and-inline-migration-spec-1"
 #   knowledge:
@@ -35,13 +36,13 @@
 from __future__ import annotations
 
 import json
-import os
 import shutil
 import tempfile
 import unittest
 from pathlib import Path
 
 from somnus import carriers
+from somnus.output import SomnusError
 from somnus import document as D
 from somnus.carriers.jsonhost import JSON_KEY, NOTEBOOK, object_members
 from somnus.model.validate import validate
@@ -76,7 +77,7 @@ class TempDirCase(unittest.TestCase):
 
     def put(self, name: str, text: str) -> Path:
         path = self.dir / name
-        path.write_text(text, encoding="utf-8")
+        path.write_text(text, encoding="utf-8", newline="\n")
         return path
 
 
@@ -196,7 +197,7 @@ class TestNotebook(TempDirCase):
 
     def test_without_metadata_refuses(self) -> None:
         path = self.put("nb.ipynb", '{"cells": []}\n')
-        with self.assertRaises(Exception):
+        with self.assertRaises(SomnusError):
             D.load(path).render({"schema": "s"})
 
 

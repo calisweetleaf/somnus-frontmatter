@@ -2,7 +2,7 @@
 # somnus:
 #   schema: "somnus://metadata/core/2.0.0"
 #   id: "urn:somnus:artifact:01a19a67-8245-7195-8ec8-57ff67ba793d"
-#   revision: 1
+#   revision: 2
 #   title: "End-to-end CLI workflows through somnus.cli.main in isolated temp homes"
 #   classification:
 #     category: "engineering"
@@ -17,7 +17,8 @@
 #     scopes:
 #       - target_ref: "urn:somnus:artifact:01a19a67-8245-7195-8ec8-57ff67ba793d"
 #         aspects: ["content"]
-#   time: {}
+#   time:
+#     updated_at: "2026-11-18T01:21:12+00:00"
 #   names:
 #     slug: "end-to-end-cli-workflows-through-somnus-cli-main-in-isolated-temp-homes"
 #   knowledge:
@@ -57,7 +58,7 @@ V01 = REPO / "archive" / "v0.1" / "examples"
 
 class CliCase(unittest.TestCase):
     def setUp(self) -> None:
-        self.tmp = Path(tempfile.mkdtemp())
+        self.tmp = Path(tempfile.mkdtemp()).resolve()
         self.ws = self.tmp / "ws"
         self.ws.mkdir()
         self._env = os.environ.get("SOMNUS_HOME")

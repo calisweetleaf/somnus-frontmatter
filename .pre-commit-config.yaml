@@ -2,7 +2,7 @@
 # somnus:
 #   schema: "somnus://metadata/core/2.0.0"
 #   id: "urn:somnus:artifact:01a19a67-7854-7145-bb97-5a1d6d8f8891"
-#   revision: 1
+#   revision: 2
 #   title: ".pre Commit Config"
 #   classification:
 #     category: "engineering"
@@ -17,7 +17,8 @@
 #     scopes:
 #       - target_ref: "urn:somnus:artifact:01a19a67-7854-7145-bb97-5a1d6d8f8891"
 #         aspects: ["content"]
-#   time: {}
+#   time:
+#     updated_at: "2026-11-18T01:21:13+00:00"
 #   names:
 #     slug: "pre-commit-config"
 #   knowledge:
@@ -59,7 +60,7 @@ repos:
       - id: debug-statements
         files: ^(src|tests)/
       - id: trailing-whitespace
-        exclude: \.md$|^archives?/|^tests/
+        exclude: \.md$|^archives?/|^tests/|^patch/
       - id: end-of-file-fixer
         exclude: \.md$|^archives?/|^tests/
 

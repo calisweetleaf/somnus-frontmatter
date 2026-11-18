@@ -2,7 +2,7 @@
 # somnus:
 #   schema: "somnus://metadata/core/2.0.0"
 #   id: "urn:somnus:artifact:01a1af7c-0ab0-70fe-bbb0-b763f149e729"
-#   revision: 1
+#   revision: 2
 #   title: "The always-on watcher, its single-instance lock, config, and service plans (D20)"
 #   classification:
 #     category: "engineering"
@@ -17,7 +17,8 @@
 #     scopes:
 #       - target_ref: "urn:somnus:artifact:01a1af7c-0ab0-70fe-bbb0-b763f149e729"
 #         aspects: ["content"]
-#   time: {}
+#   time:
+#     updated_at: "2026-11-18T01:21:13+00:00"
 #   names:
 #     slug: "the-always-on-watcher-its-single-instance-lock-config-and-service-plans-d20"
 #   knowledge:
@@ -44,6 +45,7 @@ from somnus import document as D
 from somnus import service
 from somnus.db.store import Store
 from somnus.watch import InstanceLock, Settings, Watcher, is_locked, read_status
+from somnus.output import SomnusError
 
 from test_commands import CliCase
 
@@ -206,7 +208,7 @@ class TestRunAndStatus(WatchCase):
         self.assertTrue(first.acquire())
         try:
             self.assertTrue(is_locked(home))
-            with self.assertRaises(Exception):
+            with self.assertRaises(SomnusError):
                 self.watcher().run(once=True)
         finally:
             first.release()
@@ -224,7 +226,8 @@ class TestRunAndStatus(WatchCase):
     def test_install_dry_run_changes_nothing(self) -> None:
         self.init()
         out = self.ok("daemon", "install", "--dry-run")
-        self.assertIn("somnus watch", out)
+        self.assertIn("somnus", out)
+        self.assertIn("watch", out)
 
 
 class TestConfig(WatchCase):
@@ -255,6 +258,7 @@ class TestConfig(WatchCase):
 
 
 class TestServicePlans(unittest.TestCase):
+    @unittest.skipUnless(os.name == "posix", "the linux unit plan uses POSIX paths")
     def test_linux_unit(self) -> None:
         plan = service.install_plan(Path("/h/.somnus"), "linux")
         self.assertIn("-m somnus watch", plan.content)

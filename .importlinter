@@ -59,6 +59,10 @@ ignore_imports =
     somnus.commands.mcp -> somnus.mcp
     somnus.model.validate -> somnus.document
     somnus.tui.app -> somnus.commands._common
+    # D20: the watcher reuses the authored stamp command implementation;
+    # it must not fork inline-injection or preservation-critical logic.
+    somnus.watch -> somnus.commands.stamp
+    somnus.watch -> somnus.commands._common
 
 [importlinter:contract:entrypoints]
 name = Entrypoint modules (cli, mcp, __main__) are never imported by library code
