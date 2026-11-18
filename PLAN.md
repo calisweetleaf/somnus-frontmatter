@@ -2,7 +2,7 @@
 somnus:
   schema: "somnus://metadata/core/2.0.0"
   id: "urn:somnus:artifact:01a19a67-78dc-7498-970f-47643c9ce413"
-  revision: 14
+  revision: 15
   title: "Somnus Metadata — Completion and Operator Integration Plan"
   classification:
     category: "operations"
@@ -18,7 +18,7 @@ somnus:
       - target_ref: "urn:somnus:artifact:01a19a67-78dc-7498-970f-47643c9ce413"
         aspects: ["content"]
   time:
-    updated_at: "2026-11-18T01:16:12+00:00"
+    updated_at: "2026-11-18T01:24:14+00:00"
   names:
     slug: "somnus-metadata-completion-and-operator-integration-plan"
   knowledge:
@@ -65,6 +65,18 @@ marketplace upsert; mentat entry preserved), `doctor` exit 0 — backend 2.2.0, 
 bytes, MCP handshake `somnus --actor somnus-frontmatter mcp` serves **17 tools**. Backend
 reconciliation (`somnus index`) opened 0 conflicts and none of the plugin's paths are in
 the conflict set. The renamed skills were picked up live in-session by the harness.
+
+Also noted: CI on `main` was already red before this push (same macOS/Windows
+failures, visible on `0648f25` as well — broken since the D20/
+`be7b457` era, Ubuntu always green); repaired in `2850a93` (fixtures canonicalized
+via realpath, LF-writing fixtures, ruff narrowing, `patch/` excluded from
+trailing-whitespace, POSIX-only linux-unit assertion, sanctioned `somnus.watch
+-> somnus.commands.{stamp,_common}` in .importlinter — the D20 design reuses the
+authored stamp command rather than forking it). **CI + CodeQL green on 2850a93**
+(run 44215226644 / 44215226815). One open item: `somnus bump|check` on the
+extensionless `.importlinter` reports E_ENVELOPE (sidecar route) — pre-existing,
+identical before any edit; the file now carries content changes plus its inline
+comment envelope and deserves a deliberate migration decision, not an ad-hoc fix.
 
 Not done / operator-owned: npm publish (npm is not authenticated on this host and no
 license was chosen — `license` is `UNLICENSED` in package.json pending an operator

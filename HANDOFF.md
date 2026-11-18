@@ -2,7 +2,7 @@
 somnus:
   schema: "somnus://metadata/core/2.0.0"
   id: "urn:somnus:artifact:01a19a67-78be-745c-b7a2-ded39bc0328a"
-  revision: 12
+  revision: 13
   title: "HANDOFF — finish Somnus Metadata end to end (2026-11-01)"
   classification:
     category: "engineering"
@@ -18,7 +18,7 @@ somnus:
       - target_ref: "urn:somnus:artifact:01a19a67-78be-745c-b7a2-ded39bc0328a"
         aspects: ["content"]
   time:
-    updated_at: "2026-11-18T01:16:12+00:00"
+    updated_at: "2026-11-18T01:24:14+00:00"
   names:
     slug: "handoff-finish-somnus-metadata-end-to-end-2026-11-01"
   knowledge:
@@ -67,10 +67,15 @@ them is a documentation-pass job, not part of either release.
 
 **Pending release follow-through:** commit the somnus-frontmatter 2.0.0 move and
 the 2.2.1 restore, push `main`, tag `v2.2.1` (tag workflow creates the GitHub
-Release), and record the commit hash here and in PLAN.md. npm publish of
-`somnus-frontmatter` remains blocked on this host (npm registry returns 401);
-the package is publish-ready with `UNLICENSED` pending an operator license
-decision.
+Release) — **all done 2026-11-18**: `38cee4e` (plugin reposition + 2.2.1 restore),
+`2850a93` (pre-existing CI repair: macOS/Windows fixtures, ruff, hooks,
+import-linter sanction for the D20 watcher's reuse of the stamp command —
+verified locally before push, and **CI + CodeQL are green on 2850a93**).
+Tag `v2.2.1` points at `38cee4e` (the published tree); `2850a93` contains no
+src/ changes (CI/test/config only), so the published artifact is unaffected.
+npm publish of `somnus-frontmatter` remains blocked on this host (npm registry
+returns 401); the package is publish-ready with `UNLICENSED` pending an
+operator license decision.
 
 ## D20: universal embedded carriers and the 24/7 watcher — 2026-11-05 (2.2.0, unreleased)
 
